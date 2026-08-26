@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Status del Portafolio de Proyectos - ADP</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  // Si por bloqueo de red/firewall alguna librería no cargó, avisamos claro en vez
+  // de fallar con un ReferenceError críptico.
+  window.addEventListener('DOMContentLoaded', function(){
+    var faltantes = [];
+    if(typeof XLSX === 'undefined') faltantes.push('XLSX (lectura de Excel)');
+    if(typeof Chart === 'undefined') faltantes.push('Chart.js (gráficos)');
+    if(faltantes.length){
+      var msg = document.getElementById('fileStatus');
+      if(msg){
+        msg.textContent = 'No se pudieron cargar librerías externas (' + faltantes.join(', ') +
+          '). Verifica tu conexión a internet o si tu red bloquea cdn.jsdelivr.net, y recarga la página.';
+        msg.classList.add('error');
+      }
+      var uploaderBtn = document.getElementById('btnSelect');
+      if(uploaderBtn) uploaderBtn.disabled = true;
+    }
+  });
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --verde: #87A227;
+    --verde-suave: #A8C24F;
+    --magenta: #E10E7E;
+    --negro: #000000;
+    --blanco: #FFFFFF;
+    --gris-900: #1c1c1c;
+    --gris-700: #4d4d4d;
+    --gris-400: #9a9a9a;
+    --gris-200: #e4e4e4;
+    --gris-100: #f3f3f2;
+    --card-radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Roboto Condensed', Arial, sans-serif;
+    background:var(--blanco);
+    color:var(--gris-900);
+    font-size: 18px;
+  }
+  h1,h2,h3, .title-font{
+    font-family:'Oswald', Arial, sans-serif;
+    letter-spacing:.2px;
+  }
+  
+  /* Layout Base - Responsivo (Apilado) */
+  .app{
+    max-width:1760px;
+    margin:0 auto;
+    padding:14px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ---------- HEADER ---------- */
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--blanco);
+    border:1px solid var(--gris-200);
+    border-bottom:4px solid var(--verde);
+    border-radius:12px;
+    padding:8px 16px;
+    margin-bottom:12px;
+    flex-shrink: 0;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:48px;height:48px;border-radius:10px;
+    background:var(--negro);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;flex:none;
+  }
+  .brand-mark svg{width:32px;height:32px;}
+  .brand-text h1{margin:0;font-size:28px;font-weight:700;color:var(--negro);line-height:1.1;}
+  .brand-text small{display:block;font-family:'Roboto Condensed';font-size:14px;letter-spacing:1px;color:var(--gris-700);}
+
+  /* ---------- FILE UPLOADER (Legacy or Initial Hidden) ---------- */
+  .uploader{
+    display:none; /* We hide the old uploader block since we use the modal/emptyState for upload */
+  }
+
+  /* ---------- FILTER PILLS ---------- */
+  .filters-row{
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    padding:8px 6px;
+    background: var(--blanco);
+    border-radius: var(--card-radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    margin-bottom: 12px;
+    border: 1px solid var(--gris-200);
+  }
+  .filter-group{display:flex;align-items:center;gap:10px;}
+  .filter-group .label{
+    font-family:'Oswald';font-size:16px;font-weight:600;color:var(--gris-900);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .pill-set{display:flex;gap:6px;flex-wrap:wrap;}
+  .pill{
+    font-family:'Roboto Condensed';font-weight:700;font-size:16px;
+    padding:6px 12px;border-radius:20px;border:1.5px solid var(--gris-200);
+    background:var(--blanco);color:var(--gris-900);cursor:pointer;
+    transition:all .12s;white-space:nowrap;
+  }
+  .pill:hover{border-color:var(--negro);}
+  .pill.active{background:var(--negro);color:var(--blanco);border-color:var(--negro);}
+  .divider-v{width:1.5px;height:24px;background:var(--gris-200);margin:0 4px;}
+
+  /* ---------- LAYOUT GRID ---------- */
+  .board{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:16px;
+    align-items: start;
+    flex: 1;
+  }
+  .col-left{display:flex;flex-direction:column;gap:16px;}
+  .col-right{display:flex;flex-direction:column;gap:16px;}
+
+  .card{
+    background:var(--blanco);border-radius:var(--card-radius);
+    border:1px solid var(--gris-200);
+    box-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    padding:14px 16px;
+  }
+  .card h2{
+    text-align:center;font-size:21px;margin:0 0 10px;font-weight:600;
+    text-transform:none;
+  }
+
+  /* Avance card */
+  .avance-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .kpi-num{text-align:center;flex:none;min-width:60px;}
+  .kpi-num .big{font-size:36px;font-weight:700;font-family:'Oswald';line-height:1;}
+  .kpi-num .lbl{font-size:15px;color:var(--gris-700);margin-top:2px;}
+  .gauge-wrap{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;}
+  .gauge-wrap canvas{max-height:85px;}
+  .gauge-center-label{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-family:'Oswald';font-size:21px;font-weight:600;line-height:1;}
+  .desv-wrap{text-align:center;min-width:70px;flex:none;}
+  .desv-wrap .val{font-family:'Oswald';font-size:21px;font-weight:700;}
+  .desv-wrap .lbl{font-size:14.5px;color:var(--gris-700);}
+  
+  .pie-row{display:flex;align-items:center;justify-content:space-around;gap:8px;margin-top:6px;position:relative;}
+  .pie-row canvas{max-width:110px;max-height:110px;}
+  .legend{display:flex;flex-direction:column;gap:6px;font-size:14px;flex:1;}
+  .legend .item{display:flex;align-items:center;gap:6px;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .select-mini{
+    margin-top:6px;font-size:15.5px;padding:4px 20px 4px 8px;border-radius:5px;
+    border:1px solid var(--gris-200);background:var(--blanco) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="9" height="5"><path d="M0 0l4.5 5 4.5-5z" fill="%23888"/></svg>') no-repeat right 8px center;
+    appearance:none;-webkit-appearance:none;width:100%;cursor:pointer;
+  }
+
+  .actividades-top{display:flex;align-items:center;gap:6px;}
+
+  .costos-row{display:flex;flex-direction:column;gap:16px;}
+  .gauge-col{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;}
+  .gauge-col .pct{font-family:'Oswald';font-weight:700;font-size:21px;}
+  .gauge-col .name{font-family:'Oswald';font-weight:600;font-size:17px;margin-bottom:2px;}
+  .gauge-col canvas{max-height:75px;max-width:150px;}
+  .gauge-col .scale{display:flex;justify-content:space-between;font-size:14px;color:var(--gris-700);padding:0 2px;width:100%;max-width:150px;}
+  .gauge-col .midval{font-family:'Oswald';font-weight:700;font-size:20px;margin-top:-4px;}
+
+  /* Tables */
+  .table-scroll{max-height:260px;overflow-y:auto;overflow-x:auto;border-top:1px solid var(--gris-200);}
+  table{width:100%;border-collapse:collapse;font-size:16.5px;}
+  thead th{
+    position:sticky;top:0;background:var(--blanco);text-align:left;
+    padding:8px 6px;font-weight:700;border-bottom:2px solid var(--gris-900);cursor:pointer;
+    user-select:none;white-space:nowrap;z-index: 2;
+  }
+  thead th.num, td.num{text-align:center;}
+  thead th .arrow{font-size:13px;margin-left:2px;}
+  tbody td{padding:7px 6px;border-bottom:1px solid var(--gris-100);white-space:nowrap;}
+  tbody tr:nth-child(even){background:var(--gris-100);}
+  td.avance-real{font-weight:700;}
+  .status-badge{
+    display:inline-block;padding:2px 8px;border-radius:4px;font-size:15px;font-weight:700;color:var(--blanco);
+    text-transform: uppercase;
+  }
+  .status-Terminado{background:var(--verde);}
+  .status-Ejecución, .status-En.Ejecución{background:var(--gris-700);}
+  .status-badge.terminado{background:var(--verde);}
+  .status-badge.ejecucion{background:var(--gris-700);}
+  .status-badge.noiniciado{background:var(--magenta);}
+
+  /* Gantt */
+  .gantt-wrap{position:relative;overflow-y:auto;}
+  #ganttContainer{position:relative;width:100%;}
+  #ganttChart{width:100%;display:block;}
+
+  .empty-state{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:100px 20px;text-align:center;color:var(--gris-700);
+    flex:1;
+  }
+  .empty-state svg{width:64px;height:64px;stroke:var(--gris-400);margin-bottom:14px;}
+  .empty-state h3{margin:0 0 6px;font-size:22px;color:var(--gris-900);}
+  
+  .hidden{display:none !important;}
+
+  /* ---------- CONFIG MODAL ---------- */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+  .modal-content {
+    background: #f8f9fa;
+    border-radius: 16px;
+    width: 90%; max-width: 580px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    border: 1px solid var(--gris-200);
+    overflow: hidden;
+    animation: fadeIn 0.2s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px;
+    background: #f1f3f5;
+    border-bottom: 1px solid var(--gris-200);
+  }
+  .modal-header h2 {
+    margin: 0; font-size: 18px; font-weight: 700; color: #1c2434;
+    font-family: 'Oswald', Arial, sans-serif;
+  }
+  .modal-close {
+    background: none; border: none; font-size: 26px; cursor: pointer; color: var(--gris-700);
+  }
+  .modal-close:hover { color: var(--negro); }
+  .modal-body {
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+    background: #f8f9fa;
+  }
+  .config-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-radius: 8px;
+    cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+    user-select: none;
+  }
+  .config-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .upload-card {
+    border: 1.5px solid #87A227;
+    background: #f5f8ec;
+    justify-content: space-between;
+  }
+  .delete-card {
+    border: 1.5px solid #ffa8a8;
+    background: #fff5f5;
+    justify-content: center;
+    gap: 10px;
+  }
+  .btn-select-alt {
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    padding: 6px 12px;
+    font-size: 14px; font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Roboto Condensed', sans-serif;
+  }
+  .btn-select-alt:hover {
+    background: #f1f3f5;
+  }
+
+  /* ---------- DESKTOP 16:9 VIEW STYLE ---------- */
+  @media(min-width:1024px) and (min-height:640px){
+    body{
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app{
+      height: 100vh;
+      padding: 8px 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header.topbar{
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+    .filters-row{
+      padding: 4px 10px;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+    .board{
+      grid-template-columns: 310px 1fr;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+    .col-left{
+      height: 100%;
+      min-height: 0;
+      gap: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .col-right{
+      height: 100%;
+      min-height: 0;
+      gap: 8px;
+    }
+    .col-left > .card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 6px 10px;
+    }
+    .col-left > .card h2 {
+      margin-bottom: 2px;
+      font-size: 18px;
+    }
+    .col-left > .card .avance-row {
+      flex: 1.1;
+      min-height: 0;
+      margin-bottom: 2px;
+    }
+    .col-left > .card .pie-row {
+      flex: 0.9;
+      min-height: 0;
+      position: relative;
+      margin-top: 2px;
+    }
+    .col-left > .card .pie-row canvas {
+      height: 100%;
+      min-height: 0;
+      max-height: 110px;
+      max-width: 110px;
+      width: auto;
+    }
+    .col-left > .card .gauge-wrap canvas {
+      height: 100%;
+      min-height: 0;
+      max-height: 85px;
+      width: auto;
+    }
+    .col-left > .card .gauge-wrap {
+      min-height: 0;
+      flex: 1;
+    }
+    .col-left > .card .costos-row {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      gap: 4px;
+    }
+    .col-left > .card .gauge-col {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      position: relative;
+    }
+    .col-left > .card .gauge-col canvas {
+      height: 100%;
+      min-height: 0;
+      max-height: 75px;
+      max-width: 150px;
+      width: auto;
+    }
+    .col-left > .card .gauge-col .name {
+      font-size: 16px;
+      margin: 0;
+      line-height: 1;
+    }
+    .col-left > .card .gauge-col .pct {
+      font-size: 19px;
+      margin: 0;
+      line-height: 1;
+    }
+    .col-left > .card .gauge-col .midval {
+      font-size: 18px;
+      margin: 0;
+      line-height: 1;
+    }
+    .col-left > .card .gauge-col .scale {
+      font-size: 13px;
+      margin: 0;
+      line-height: 1;
+    }
+    
+    .col-right > .card {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 10px;
+    }
+    .col-right > .card h2 {
+      margin-bottom: 4px;
+      font-size: 19px;
+    }
+    
+    /* Proportions for cards in left column */
+    #cardAvance {
+      flex: 1.25;
+    }
+    #cardActividadesGrafico {
+      flex: 0.8;
+    }
+    #cardCostos {
+      flex: 1.95;
+    }
+
+    /* Proportions for cards in right column */
+    #cardProyectos {
+      flex: 1.25;
+    }
+    #cardActividades {
+      flex: 0.95;
+    }
+    #cardCronograma {
+      flex: 1;
+    }
+    
+    .table-scroll {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+    }
+    .gantt-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .empty-state {
+      height: calc(100vh - 120px);
+      padding: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 40 40" fill="none"><circle cx="30" cy="10" r="6" fill="var(--verde)"/><path d="M2 22 L22 12 L20 24 L2 22Z" fill="var(--magenta)"/><text x="4" y="34" font-family="Oswald" font-size="15" font-weight="700" fill="var(--blanco)">adp</text></svg>
+      </div>
+      <div class="brand-text">
+        <small>AEROPUERTOS DEL PERÚ</small>
+        <h1 id="headerTitle">Status del Portafolio de Proyectos</h1>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span id="headerStatusText" style="font-style:italic; font-size:12.5px; color:var(--gris-700);">Cargue los archivos para comenzar</span>
+      <button id="btnSettings" onclick="openSettings()" style="background:#ffffff; border:1.5px solid var(--gris-200); border-radius:8px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition: border-color 0.15s;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gris-900)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hidden uploader elements for compatibility -->
+  <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls" style="display:none;">
+  <span class="file-status" id="fileStatus" style="display:none;"></span>
+
+  <div id="emptyState" class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 16h5M8 8h3"/></svg>
+    <h3>Carga un archivo Excel para ver el dashboard</h3>
+    <div>Los gráficos, tablas y filtros se generarán automáticamente con tu información.</div>
+  </div>
+
+  <div class="board hidden" id="board">
+    <div class="col-left">
+
+      <div class="card" id="cardAvance">
+        <h2>Avance</h2>
+        <div class="avance-row">
+          <div class="kpi-num">
+            <div class="big" id="kpiProyectos">0</div>
+            <div class="lbl">Proyectos</div>
+          </div>
+          <div class="gauge-wrap">
+            <canvas id="gaugeAvance"></canvas>
+            <div class="gauge-center-label" id="gaugeAvanceLabel">0 %</div>
+          </div>
+          <div class="desv-wrap">
+            <div class="val" id="kpiDesviacion">0 %</div>
+            <div class="lbl">Desviación</div>
+          </div>
+        </div>
+        <div style="border-top: 1px solid var(--gris-200); margin: 6px 0;"></div>
+        <div class="pie-row">
+          <canvas id="pieEstado"></canvas>
+          <div>
+            <div class="legend" id="legendEstado"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="cardActividadesGrafico">
+        <h2>Actividades por Estatus</h2>
+        <div class="pie-row">
+          <div class="kpi-num" style="width:60px;">
+            <div class="big" id="kpiActividades">0</div>
+            <div class="lbl" style="font-size:13px;">Actividades</div>
+          </div>
+          <canvas id="pieActividadStatus"></canvas>
+          <div class="legend" id="legendActividadStatus"></div>
+        </div>
+      </div>
+
+      <div class="card" id="cardCostos">
+        <h2>Costos</h2>
+        <div class="costos-row">
+          <div class="gauge-col">
+            <div class="name">CAPEX</div>
+            <div class="pct" id="capexPct">0 %</div>
+            <canvas id="gaugeCapex"></canvas>
+            <div class="midval" id="capexVal">0 mil</div>
+            <div class="scale"><span id="capexMin">0 mil</span><span id="capexMax">0 mil</span></div>
+          </div>
+          <div class="gauge-col">
+            <div class="name">OPEX</div>
+            <div class="pct" id="opexPct">0 %</div>
+            <canvas id="gaugeOpex"></canvas>
+            <div class="midval" id="opexVal">0 mil</div>
+            <div class="scale"><span id="opexMin">0 mil</span><span id="opexMax">0 mil</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-right">
+      
+      <!-- Filters Row inside the right column -->
+      <div class="filters-row" id="filtersRow" style="display:none;">
+        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; flex:1;">
+          <div class="filter-group" id="yearFilterGroup" style="display:none;">
+            <div class="label">Año</div>
+            <div class="pill-set" id="yearPills"></div>
+          </div>
+          <div class="divider-v" id="yearDivider" style="display:none;"></div>
+          
+          <div class="filter-group">
+            <div class="label">Tipo de Proyecto</div>
+            <div class="pill-set" id="origenPills"></div>
+          </div>
+          <div class="divider-v"></div>
+          
+          <div class="filter-group">
+            <div class="label">Naturaleza</div>
+            <div class="pill-set" id="tipoPills"></div>
+          </div>
+        </div>
+        
+        <!-- Clear Filters Button -->
+        <button id="clearFiltersBtn" onclick="clearAllFilters()" title="Limpiar Filtros" style="background:transparent; border:none; padding:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; cursor:default; transition: all 0.15s; margin-left: auto; flex-shrink: 0; opacity: 0.3; pointer-events: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--gris-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px; transition: stroke 0.15s;">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            <line x1="2" y1="2" x2="22" y2="22"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="card" id="cardProyectos">
+        <div class="table-scroll">
+          <table id="tblProyectos">
+            <thead>
+              <tr>
+                <th data-key="nombre">Proyecto</th>
+                <th data-key="estado">Estado</th>
+                <th class="num" data-key="avancePlan">Avance Plan</th>
+                <th class="num" data-key="avanceReal">Avance Real <span class="arrow">▼</span></th>
+                <th class="num" data-key="capexPlan">CAPEX Plan</th>
+                <th class="num" data-key="capexReal">CAPEX Real</th>
+                <th class="num" data-key="opexPlan">OPEX Plan</th>
+                <th class="num" data-key="opexReal">OPEX Real</th>
+              </tr>
+            </thead>
+            <tbody id="tblProyectosBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="cardActividades">
+        <div class="table-scroll">
+          <table id="tblActividades">
+            <thead>
+              <tr>
+                <th class="num" data-key="nro">Nro <span class="arrow">▼</span></th>
+                <th data-key="actividad">Actividades</th>
+                <th data-key="fecha">Fecha Límite</th>
+                <th data-key="responsable">Responsable</th>
+                <th data-key="status">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tblActividadesBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="cardCronograma">
+        <h2 style="text-align:left; margin-bottom:6px;">Cronograma</h2>
+        <div class="gantt-wrap">
+          <div id="ganttContainer">
+            <canvas id="ganttChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de Configuración y Administración -->
+<div id="settingsModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Configuración y Administración</h2>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="modal-body">
+      
+      <!-- Opción 1: Subir / actualizar archivo -->
+      <div class="config-card upload-card" onclick="triggerFileInput(event)">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <svg viewBox="0 0 24 24" fill="#87A227" style="width:24px; height:24px; flex-shrink:0;">
+            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/>
+          </svg>
+          <span style="color:#87A227; font-weight:700; font-size:14px; white-space:nowrap;">Cargar Carpeta de Excels</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation()">
+          <button class="btn-select-alt" onclick="document.getElementById('fileInput').click()">Elegir archivos</button>
+          <span id="modalFileStatus" style="font-size:11.5px; color:#87A227; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No se eligió ningún archivo</span>
+        </div>
+      </div>
+      
+      <!-- Opción 2: Borrar caché -->
+      <div class="config-card delete-card" onclick="clearDashboardCache()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#e10e7e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px; height:20px; flex-shrink:0;">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+        <span style="color:#e10e7e; font-weight:700; font-size:14px;">Borrar Caché del Navegador</span>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ESTADO GLOBAL
+========================================================= */
+const state = {
+  presentacion: [],   // hoja "Presentación"
+  proyectos: [],       // hoja "Proyectos"
+  actividades: [],     // hoja "Actividades"
+  combined: [],        // proyectos combinados (join Presentación + Proyectos)
+  years: [],
+  filters: { 
+    origen: [], 
+    tipo: [], 
+    year: [],
+    estado: [],
+    actividadStatus: [],
+    projectCod: [],
+    activityNro: []
+  },
+  sort: { table: 'proyectos', key: 'avanceReal', dir: 'desc' }
+};
+
+const COLORS = {
+  verde:'#87A227', magenta:'#E10E7E', negro:'#000000', blanco:'#FFFFFF',
+  gris700:'#4d4d4d', gris400:'#9a9a9a', gris200:'#e4e4e4'
+};
+
+let charts = {}; // referencias a instancias Chart.js para poder destruirlas al refrescar
+
+/* =========================================================
+   CARGA DE ARCHIVO Y CONFIGURACIÓN MODAL
+========================================================= */
+const fileInput = document.getElementById('fileInput');
+const fileStatus = document.getElementById('fileStatus');
+
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+// Arrastrar y soltar archivos en toda la pantalla cuando el dashboard está vacío
+window.addEventListener('dragenter', e => e.preventDefault());
+window.addEventListener('dragover', e => {
+  e.preventDefault();
+  if (state.combined.length === 0) {
+    document.getElementById('emptyState').style.background = '#f5f8ec';
+  }
+});
+window.addEventListener('dragleave', e => {
+  e.preventDefault();
+  if (state.combined.length === 0) {
+    document.getElementById('emptyState').style.background = '';
+  }
+});
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  if (state.combined.length === 0) {
+    document.getElementById('emptyState').style.background = '';
+    const f = e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  }
+});
+
+function handleFile(file){
+  fileStatus.textContent = 'Leyendo archivo...';
+  fileStatus.classList.remove('error');
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try{
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      parseWorkbook(wb, file.name);
+      
+      // Guardar datos en caché
+      localStorage.setItem('dashboard_data', JSON.stringify({
+        presentacion: state.presentacion,
+        proyectos: state.proyectos,
+        actividades: state.actividades,
+        fileName: file.name
+      }));
+      
+      closeSettings();
+    }catch(err){
+      console.error(err);
+      alert('Error al leer el archivo: ' + err.message);
+      fileStatus.textContent = 'Error: ' + err.message;
+      fileStatus.classList.add('error');
+    }
+  };
+  reader.onerror = () => {
+    alert('No se pudo leer el archivo.');
+    fileStatus.textContent = 'No se pudo leer el archivo.';
+    fileStatus.classList.add('error');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function sheetToRows(wb, name){
+  const ws = wb.Sheets[name];
+  if(!ws) return null;
+  return XLSX.utils.sheet_to_json(ws, {defval:null, raw:true});
+}
+
+function parseWorkbook(wb, filename){
+  const required = ['Presentación','Proyectos','Actividades'];
+  const missing = required.filter(n => !wb.SheetNames.includes(n));
+  if(missing.length){
+    alert('Faltan hojas en el Excel: ' + missing.join(', '));
+    fileStatus.textContent = 'Faltan hojas: ' + missing.join(', ');
+    fileStatus.classList.add('error');
+    return;
+  }
+
+  state.presentacion = sheetToRows(wb, 'Presentación') || [];
+  state.proyectos    = sheetToRows(wb, 'Proyectos') || [];
+  state.actividades  = sheetToRows(wb, 'Actividades') || [];
+
+  buildCombined();
+  buildFilterOptions();
+  
+  document.getElementById('filtersRow').style.display = 'flex';
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('board').classList.remove('hidden');
+  document.getElementById('headerStatusText').textContent = 'Actualizar dashboard';
+  
+  render();
+}
+
+function excelDateToJS(v){
+  if(v instanceof Date) return v;
+  if(typeof v === 'number'){
+    // fecha serial de Excel
+    return new Date(Math.round((v - 25569) * 86400 * 1000));
+  }
+  if(typeof v === 'string'){
+    const d = new Date(v);
+    if(!isNaN(d)) return d;
+  }
+  return null;
+}
+
+function buildCombined(){
+  const proyMap = {};
+  state.proyectos.forEach(p=>{
+    const cod = (p['Cod Proy']||'').toString().trim();
+    proyMap[cod] = p;
+  });
+
+  state.combined = state.presentacion.map(row=>{
+    const cod = (row['COD PROY']||'').toString().trim();
+    const proy = proyMap[cod] || {};
+    const anio = proy['Año Proy'] || (cod.split('-')[0] ? parseInt(cod.split('-')[0]) : null);
+    const avancePlan = Number(row['AVANCE PLAN']||0);
+    const avanceReal = Number(row['AVANCE REAL']||0);
+    return {
+      cod: cod,
+      anio: anio,
+      nombre: proy['Nombre Proy'] || row['NOMBRE CORTO PROY'] || cod,
+      nombreCorto: row['NOMBRE CORTO PROY'] || proy['Nombre Corto'] || cod,
+      origen: row['ORIGEN PROY'] || proy['Origen Proy'] || null,
+      tipo: row['TIPO PROY'] || proy['Tipo Proy'] || null,
+      area: row['AREA'] || proy['Area'] || '',
+      lider: row['LIDER PROY'] || proy['Lider Proy'] || '',
+      capexPlan: Number(row['PPTO CAPEX']||0),
+      capexReal: Number(row['REAL CAPEX']||0),
+      opexPlan: Number(row['PPTO OPEX']||0),
+      opexReal: Number(row['REAL OPEX']||0),
+      avancePlan: avancePlan,
+      avanceReal: avanceReal,
+      estado: row['ESTADO 1'] || (avanceReal>=1 ? 'Terminado' : (avanceReal>0 ? 'Ejecución' : 'No iniciado')),
+      fechaCreacion: excelDateToJS(proy['Fecha Creacion'])
+    };
+  });
+}
+
+function buildFilterOptions(){
+  state.years = [...new Set(state.combined.map(p=>p.anio).filter(Boolean))].sort();
+  
+  const yearPills = document.getElementById('yearPills');
+  const yearDivider = document.getElementById('yearDivider');
+  const yearFilterGroup = document.getElementById('yearFilterGroup');
+  
+  if (state.years.length > 1) {
+    yearFilterGroup.style.display = 'block';
+    if (yearDivider) yearDivider.style.display = 'block';
+    yearPills.innerHTML = state.years.map(y=>`<button class="pill" data-val="${y}">${y}</button>`).join('');
+    
+    // Seleccionar el último año por defecto si no hay filtro asignado
+    if (!state.filters.year || state.filters.year.length === 0) {
+      state.filters.year = [state.years[state.years.length-1]];
+    }
+    updatePillStates(yearPills, state.filters.year);
+    
+    yearPills.querySelectorAll('.pill').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const val = parseInt(btn.dataset.val);
+        if (state.filters.year.includes(val)) {
+          state.filters.year = state.filters.year.filter(y => y !== val);
+        } else {
+          state.filters.year.push(val);
+        }
+        updatePillStates(yearPills, state.filters.year);
+        render();
+      });
+    });
+  } else {
+    yearFilterGroup.style.display = 'none';
+    if (yearDivider) yearDivider.style.display = 'none';
+    if (state.years.length === 1) {
+      state.filters.year = [state.years[0]];
+    } else {
+      state.filters.year = [];
+    }
+  }
+
+  const origenes = [...new Set(state.combined.map(p=>p.origen).filter(Boolean))];
+  const origenPills = document.getElementById('origenPills');
+  origenPills.innerHTML = origenes.map(o=>`<button class="pill" data-val="${o}">${o}</button>`).join('');
+  updatePillStates(origenPills, state.filters.origen);
+  origenPills.querySelectorAll('.pill').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const val = btn.dataset.val;
+      if (state.filters.origen.includes(val)) {
+        state.filters.origen = state.filters.origen.filter(o => o !== val);
+      } else {
+        state.filters.origen.push(val);
+      }
+      updatePillStates(origenPills, state.filters.origen);
+      render();
+    });
+  });
+
+  // Orden fijo de naturaleza si existe, si no alfabético
+  const ordenNat = ['Estratégico','Operativo','Normativo','Corporativo'];
+  let tipos = [...new Set(state.combined.map(p=>p.tipo).filter(Boolean))];
+  tipos.sort((a,b)=> ordenNat.indexOf(a) - ordenNat.indexOf(b));
+  const tipoPills = document.getElementById('tipoPills');
+  tipoPills.innerHTML = tipos.map((t,i)=>{
+    const idx = ordenNat.indexOf(t);
+    const label = (idx>=0 ? (idx+1)+'. ' : '') + t;
+    return `<button class="pill" data-val="${t}">${label}</button>`;
+  }).join('');
+  updatePillStates(tipoPills, state.filters.tipo);
+  tipoPills.querySelectorAll('.pill').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const val = btn.dataset.val;
+      if (state.filters.tipo.includes(val)) {
+        state.filters.tipo = state.filters.tipo.filter(t => t !== val);
+      } else {
+        state.filters.tipo.push(val);
+      }
+      updatePillStates(tipoPills, state.filters.tipo);
+      render();
+    });
+  });
+}
+
+function updatePillStates(container, activeVals){
+  const vals = Array.isArray(activeVals) ? activeVals : (activeVals ? [activeVals] : []);
+  container.querySelectorAll('.pill').forEach(b=>{
+    const isPresent = vals.some(v => v == b.dataset.val);
+    b.classList.toggle('active', isPresent);
+  });
+}
+
+/* =========================================================
+   CONFIGURACIÓN MODAL Y CACHÉ
+========================================================= */
+window.openSettings = function() {
+  document.getElementById('settingsModal').style.display = 'flex';
+  const cached = localStorage.getItem('dashboard_data');
+  const modalStatus = document.getElementById('modalFileStatus');
+  if (modalStatus) {
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        modalStatus.textContent = parsed.fileName || 'Datos guardados';
+      } catch (e) {
+        modalStatus.textContent = 'No se eligió ningún archivo';
+      }
+    } else {
+      modalStatus.textContent = 'No se eligió ningún archivo';
+    }
+  }
+};
+
+window.closeSettings = function() {
+  document.getElementById('settingsModal').style.display = 'none';
+};
+
+window.triggerFileInput = function(e) {
+  fileInput.click();
+};
+
+window.clearDashboardCache = function() {
+  if(confirm('¿Estás seguro de que deseas borrar la caché y restablecer el dashboard al estado inicial?')) {
+    localStorage.removeItem('dashboard_data');
+    
+    // Restaurar estado general
+    state.presentacion = [];
+    state.proyectos = [];
+    state.actividades = [];
+    state.combined = [];
+    state.filters = { origen: [], tipo: [], year: [], estado: [], actividadStatus: [], projectCod: [], activityNro: [] };
+    
+    // Limpiar input y estatus
+    fileInput.value = '';
+    fileStatus.textContent = '';
+    
+    // Destruir gráficos existentes
+    Object.keys(charts).forEach(key => destroyChart(key));
+    
+    // Resetear UI
+    document.getElementById('filtersRow').style.display = 'none';
+    document.getElementById('board').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('headerStatusText').textContent = 'Cargue los archivos para comenzar';
+    
+    closeSettings();
+  }
+};
+
+// Cerrar modal al hacer clic afuera
+window.addEventListener('click', e => {
+  const modal = document.getElementById('settingsModal');
+  if (e.target === modal) {
+    closeSettings();
+  }
+});
+
+/* =========================================================
+   CARGA DE LOGO DINÁMICO
+========================================================= */
+function loadDynamicLogo() {
+  const img = new Image();
+  img.src = 'LOGO.png';
+  img.onload = function() {
+    applyLogoImage(img.src);
+  };
+  img.onerror = function() {
+    // Si no encuentra en minúscula, probamos en mayúscula
+    const imgUpper = new Image();
+    imgUpper.src = 'LOGO.PNG';
+    imgUpper.onload = function() {
+      applyLogoImage(imgUpper.src);
+    };
+    imgUpper.onerror = function() {
+      console.log('LOGO.png / LOGO.PNG no encontrado en el directorio. Usando logo SVG por defecto.');
+    };
+  };
+}
+
+function applyLogoImage(src) {
+  const brand = document.querySelector('.brand');
+  if (brand) {
+    const defaultMark = brand.querySelector('.brand-mark');
+    if (defaultMark) {
+      defaultMark.style.display = 'none';
+    }
+    
+    let logoImg = document.getElementById('brandLogoImg');
+    if (!logoImg) {
+      logoImg = document.createElement('img');
+      logoImg.id = 'brandLogoImg';
+      logoImg.src = src;
+      logoImg.style.maxHeight = '36px';
+      logoImg.style.maxWidth = '120px';
+      logoImg.style.objectFit = 'contain';
+      logoImg.style.flexShrink = '0';
+      brand.insertBefore(logoImg, brand.firstChild);
+    } else {
+      logoImg.src = src;
+    }
+  }
+}
+
+/* =========================================================
+   FILTRADO AVANZADO (POWER BI CROSS-FILTERING)
+========================================================= */
+function getFilteredProjects() {
+  return getFilteredProjectsExcluding(null);
+}
+
+function getFilteredProjectsForTable() {
+  return getFilteredProjectsExcluding('projectCod');
+}
+
+function getFilteredActivities(projects) {
+  return getFilteredActivitiesExcluding(projects, null);
+}
+
+function getFilteredProjectsExcluding(excludeFilterName) {
+  let projects = [...state.combined];
+  
+  // 1. Filtro de Año
+  if (state.filters.year && state.filters.year.length > 0) {
+    projects = projects.filter(p => state.filters.year.includes(p.anio));
+  }
+  // 2. Filtro de Tipo de Proyecto (Origen)
+  if (state.filters.origen && state.filters.origen.length > 0) {
+    projects = projects.filter(p => state.filters.origen.includes(p.origen));
+  }
+  // 3. Filtro de Naturaleza (Tipo)
+  if (state.filters.tipo && state.filters.tipo.length > 0) {
+    projects = projects.filter(p => state.filters.tipo.includes(p.tipo));
+  }
+  // 4. Filtro de Estado (pastel Avance) - Excluir para el propio pastel
+  if (excludeFilterName !== 'estado' && state.filters.estado && state.filters.estado.length > 0) {
+    projects = projects.filter(p => state.filters.estado.includes(p.estado));
+  }
+  // 5. Filtro de Status de Actividad (pastel Actividades) - Excluir para el propio pastel
+  if (excludeFilterName !== 'actividadStatus' && state.filters.actividadStatus && state.filters.actividadStatus.length > 0) {
+    const activeProjectCodes = new Set(
+      state.actividades
+        .filter(a => {
+          const normStatus = getNormalizedActivityStatus(a['Status'] || '');
+          return state.filters.actividadStatus.includes(normStatus);
+        })
+        .map(a => (a['Nro Proyecto'] || '').toString().trim())
+    );
+    projects = projects.filter(p => activeProjectCodes.has(p.cod));
+  }
+  // 6. Selección de Proyecto (de cualquiera de las tablas)
+  if (excludeFilterName !== 'projectCod' && state.filters.projectCod && state.filters.projectCod.length > 0) {
+    projects = projects.filter(p => state.filters.projectCod.includes(p.cod));
+  }
+  
+  return projects;
+}
+
+function getNormalizedActivityStatus(status) {
+  if (!status) return 'Pendiente';
+  const s = status.toString().trim();
+  if (/terminado/i.test(s)) return 'Terminado';
+  if (/ejecuci/i.test(s) || /proceso/i.test(s)) return 'En proceso';
+  return 'Pendiente';
+}
+
+function getFilteredActivitiesExcluding(projects, excludeFilterName) {
+  const projectCodes = new Set(projects.map(p => p.cod));
+  let activities = state.actividades.filter(a => projectCodes.has((a['Nro Proyecto'] || '').toString().trim()));
+  
+  // Filtro de Status de Actividad
+  if (excludeFilterName !== 'actividadStatus' && state.filters.actividadStatus && state.filters.actividadStatus.length > 0) {
+    activities = activities.filter(a => {
+      const normStatus = getNormalizedActivityStatus(a['Status'] || '');
+      return state.filters.actividadStatus.includes(normStatus);
+    });
+  }
+  // Filtro de fila de actividad específica
+  if (excludeFilterName !== 'activityNro' && state.filters.activityNro && state.filters.activityNro.length > 0) {
+    activities = activities.filter(a => state.filters.activityNro.includes(Number(a['Nro Actividad'])));
+  }
+  
+  return activities;
+}
+
+/* =========================================================
+   FUNCIONES TOGGLE FILTERS
+========================================================= */
+window.toggleEstadoFilter = function(label) {
+  if (state.filters.estado.includes(label)) {
+    state.filters.estado = state.filters.estado.filter(e => e !== label);
+  } else {
+    state.filters.estado.push(label);
+  }
+  render();
+};
+
+window.toggleActividadStatusFilter = function(label) {
+  if (state.filters.actividadStatus.includes(label)) {
+    state.filters.actividadStatus = state.filters.actividadStatus.filter(i => i !== label);
+  } else {
+    state.filters.actividadStatus.push(label);
+  }
+  render();
+};
+
+window.toggleProjectFilter = function(cod) {
+  if (state.filters.projectCod.includes(cod)) {
+    state.filters.projectCod = state.filters.projectCod.filter(c => c !== cod);
+  } else {
+    state.filters.projectCod.push(cod);
+  }
+  render();
+};
+
+window.toggleActivityFilter = function(nro, projectCod) {
+  if (state.filters.activityNro.includes(nro)) {
+    state.filters.activityNro = state.filters.activityNro.filter(n => n !== nro);
+  } else {
+    state.filters.activityNro.push(nro);
+  }
+  render();
+};
+
+window.clearAllFilters = function() {
+  state.filters.origen = [];
+  state.filters.tipo = [];
+  state.filters.estado = [];
+  state.filters.actividadStatus = [];
+  state.filters.projectCod = [];
+  state.filters.activityNro = [];
+  
+  // Limpiar píldoras de origen y naturaleza
+  const origenPills = document.getElementById('origenPills');
+  const tipoPills = document.getElementById('tipoPills');
+  if (origenPills) updatePillStates(origenPills, []);
+  if (tipoPills) updatePillStates(tipoPills, []);
+  
+  // Limpiar píldoras de año
+  const yearPills = document.getElementById('yearPills');
+  if (yearPills) updatePillStates(yearPills, state.filters.year);
+  
+  render();
+};
+
+function updateClearFiltersButtonVisibility() {
+  const hasActiveFilters = !!(
+    state.filters.origen.length > 0 ||
+    state.filters.tipo.length > 0 ||
+    state.filters.estado.length > 0 ||
+    state.filters.actividadStatus.length > 0 ||
+    state.filters.projectCod.length > 0 ||
+    state.filters.activityNro.length > 0
+  );
+  
+  const btn = document.getElementById('clearFiltersBtn');
+  if (btn) {
+    const svg = btn.querySelector('svg');
+    if (hasActiveFilters) {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+      btn.style.cursor = 'pointer';
+      if (svg) svg.style.stroke = 'var(--magenta)';
+    } else {
+      btn.style.opacity = '0.3';
+      btn.style.pointerEvents = 'none';
+      btn.style.cursor = 'default';
+      if (svg) svg.style.stroke = 'var(--gris-400)';
+    }
+  }
+}
+
+/* =========================================================
+   RENDER PRINCIPAL
+========================================================= */
+function render(){
+  const projects = getFilteredProjects();
+  const activities = getFilteredActivities(projects);
+  
+  updateClearFiltersButtonVisibility();
+
+  renderAvance(projects);
+  renderEstadoPie(projects);
+  renderActividadesCard(activities);
+  renderCostos(projects);
+  
+  const tableProjects = getFilteredProjectsForTable();
+  renderTablaProyectos(tableProjects);
+  
+  const tableActivities = getFilteredActivitiesExcluding(projects, 'activityNro');
+  renderTablaActividades(tableActivities);
+  
+  renderGantt(tableProjects);
+}
+
+function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
+
+/* --------- Avance --------- */
+function renderAvance(projects){
+  document.getElementById('kpiProyectos').textContent = projects.length;
+
+  const avgReal = projects.length ? projects.reduce((s,p)=>s+p.avanceReal,0)/projects.length : 0;
+  const avgPlan = projects.length ? projects.reduce((s,p)=>s+p.avancePlan,0)/projects.length : 0;
+  const pctReal = Math.round(avgReal*100);
+  const desviacion = Math.round((avgReal-avgPlan)*1000)/10;
+
+  document.getElementById('gaugeAvanceLabel').textContent = pctReal + ' %';
+  const desvEl = document.getElementById('kpiDesviacion');
+  desvEl.textContent = (desviacion>0?'+':'') + desviacion + ' %';
+  desvEl.style.color = desviacion < 0 ? COLORS.magenta : COLORS.verde;
+
+  destroyChart('gaugeAvance');
+  charts.gaugeAvance = new Chart(document.getElementById('gaugeAvance'), {
+    type:'doughnut',
+    data:{ datasets:[{ data:[Math.max(pctReal,0), Math.max(100-pctReal,0)],
+      backgroundColor:[COLORS.verde, COLORS.gris200], borderWidth:0 }] },
+    options:{
+      rotation:-90, circumference:180, cutout:'72%',
+      plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+      responsive:true, maintainAspectRatio:false
+    }
+  });
+}
+
+/* --------- Pie Estado --------- */
+const ESTADO_COLORS = { 'Terminado':COLORS.verde, 'Ejecución':COLORS.gris700, 'No iniciado':COLORS.magenta };
+function renderEstadoPie(projects){
+  // Para comportamiento Power BI, el propio pastel ignora su propio filtro
+  const pieProjects = getFilteredProjectsExcluding('estado');
+
+  const counts = {};
+  pieProjects.forEach(p=>{ counts[p.estado] = (counts[p.estado]||0)+1; });
+  const labels = Object.keys(counts);
+  const data = labels.map(l=>counts[l]);
+  
+  const hasFilter = state.filters.estado && state.filters.estado.length > 0;
+  // Atenuar colores de sectores no seleccionados
+  const colors = labels.map(l => {
+    const baseColor = ESTADO_COLORS[l] || COLORS.gris400;
+    if (hasFilter && !state.filters.estado.includes(l)) {
+      return baseColor + '40'; // ~25% de opacidad
+    }
+    return baseColor;
+  });
+
+  destroyChart('pieEstado');
+  charts.pieEstado = new Chart(document.getElementById('pieEstado'), {
+    type:'pie',
+    data:{ labels, datasets:[{ data, backgroundColor: colors, borderWidth:1, borderColor:'#fff' }] },
+    options:{ 
+      plugins:{legend:{display:false}}, 
+      responsive:true, 
+      maintainAspectRatio:false,
+      onClick: (evt, elements, chart) => {
+        if (elements && elements.length > 0) {
+          const index = elements[0].index;
+          const label = chart.data.labels[index];
+          toggleEstadoFilter(label);
+        }
+      }
+    }
+  });
+
+  document.getElementById('legendEstado').innerHTML = labels.map((l,i)=> {
+    const isSelected = state.filters.estado.includes(l);
+    const style = isSelected ? 'font-weight:700; text-decoration:underline;' : '';
+    const opacity = (hasFilter && !isSelected) ? 'opacity:0.55;' : '';
+    return `<div class="item" style="cursor:pointer; ${style} ${opacity}" onclick="toggleEstadoFilter('${l}')"><span class="dot" style="background:${colors[i]}"></span>${l} (${data[i]})</div>`;
+  }).join('');
+}
+
+/* --------- Actividades --------- */
+const STATUS_ACT_COLORS = { 'Terminado': COLORS.verde, 'En proceso': COLORS.gris700, 'Pendiente': COLORS.magenta };
+function renderActividadesCard(activities){
+  // Para el pastel de estatus, se ignora su propio filtro para poder volver a seleccionarlo
+  const pieProjects = getFilteredProjectsExcluding('actividadStatus');
+  const pieActivities = getFilteredActivitiesExcluding(pieProjects, 'actividadStatus');
+
+  document.getElementById('kpiActividades').textContent = activities.length;
+  
+  const counts = { 'Terminado': 0, 'En proceso': 0, 'Pendiente': 0 };
+  pieActivities.forEach(a => {
+    const status = getNormalizedActivityStatus(a['Status'] || '');
+    counts[status] = (counts[status] || 0) + 1;
+  });
+  
+  const labels = ['Terminado', 'En proceso', 'Pendiente'];
+  const data = labels.map(l=>counts[l]);
+  
+  const hasFilter = state.filters.actividadStatus && state.filters.actividadStatus.length > 0;
+  const colors = labels.map(l => {
+    const baseColor = STATUS_ACT_COLORS[l];
+    if (hasFilter && !state.filters.actividadStatus.includes(l)) {
+      return baseColor + '40'; // ~25% de opacidad
+    }
+    return baseColor;
+  });
+
+  destroyChart('pieActividadStatus');
+  charts.pieActividadStatus = new Chart(document.getElementById('pieActividadStatus'), {
+    type:'pie',
+    data:{ labels, datasets:[{ data, backgroundColor: colors, borderWidth:1, borderColor:'#fff' }] },
+    options:{ 
+      plugins:{legend:{display:false}}, 
+      responsive:true, 
+      maintainAspectRatio:false,
+      onClick: (evt, elements, chart) => {
+        if (elements && elements.length > 0) {
+          const index = elements[0].index;
+          const label = chart.data.labels[index];
+          toggleActividadStatusFilter(label);
+        }
+      }
+    }
+  });
+
+  document.getElementById('legendActividadStatus').innerHTML = labels.map((l,i)=> {
+    const isSelected = state.filters.actividadStatus.includes(l);
+    const style = isSelected ? 'font-weight:700; text-decoration:underline;' : '';
+    const opacity = (hasFilter && !isSelected) ? 'opacity:0.55;' : '';
+    return `<div class="item" style="cursor:pointer; ${style} ${opacity}" onclick="toggleActividadStatusFilter('${l}')"><span class="dot" style="background:${STATUS_ACT_COLORS[l]}"></span>${l} (${data[i]})</div>`;
+  }).join('');
+}
+
+/* --------- Costos --------- */
+function renderCostos(projects){
+  const capexPlan = projects.reduce((s,p)=>s+p.capexPlan,0);
+  const capexReal = projects.reduce((s,p)=>s+p.capexReal,0);
+  const opexPlan  = projects.reduce((s,p)=>s+p.opexPlan,0);
+  const opexReal  = projects.reduce((s,p)=>s+p.opexReal,0);
+
+  paintGauge('gaugeCapex', capexPlan, capexReal, 'capex', COLORS.verde);
+  paintGauge('gaugeOpex', opexPlan, opexReal, 'opex', COLORS.magenta);
+}
+
+function toMil(v){ return (v/1000).toFixed(v>=1000?0:1).replace(/\.0$/,''); }
+
+function paintGauge(canvasId, plan, real, prefix, color = COLORS.verde){
+  const max = Math.max(plan, real, 1);
+  const pct = plan>0 ? Math.round((real/plan)*100) : 0;
+  const fillPct = Math.min((real/max)*100, 100);
+
+  document.getElementById(prefix+'Pct').textContent = pct + ' %';
+  document.getElementById(prefix+'Val').textContent = toMil(real) + ' mil';
+  document.getElementById(prefix+'Min').textContent = '0 mil';
+  document.getElementById(prefix+'Max').textContent = toMil(max) + ' mil';
+
+  destroyChart(canvasId);
+  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type:'doughnut',
+    data:{ datasets:[{ data:[fillPct, 100-fillPct],
+      backgroundColor:[color, COLORS.gris200], borderWidth:0 }] },
+    options:{
+      rotation:-90, circumference:180, cutout:'72%',
+      plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+      responsive:true, maintainAspectRatio:false
+    }
+  });
+}
+
+/* --------- Tabla Proyectos --------- */
+function renderTablaProyectos(projects){
+  const key = state.sort.table==='proyectos' ? state.sort.key : 'avanceReal';
+  const dir = state.sort.table==='proyectos' ? state.sort.dir : 'desc';
+  const sorted = [...projects].sort((a,b)=>{
+    let va = a[key], vb = b[key];
+    if(typeof va === 'string') return dir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return dir==='asc' ? va-vb : vb-va;
+  });
+
+  const hasSelectedProject = state.filters.projectCod && state.filters.projectCod.length > 0;
+  document.getElementById('tblProyectosBody').innerHTML = sorted.map(p=>{
+    const isSelected = state.filters.projectCod.includes(p.cod);
+    let activeRowStyle = 'cursor: pointer;';
+    if (isSelected) {
+      activeRowStyle += ' background-color: rgba(135, 162, 39, 0.15); font-weight: bold;';
+    } else if (hasSelectedProject) {
+      activeRowStyle += ' opacity: 0.45;';
+    }
+    return `
+      <tr style="${activeRowStyle}" onclick="toggleProjectFilter('${p.cod}')">
+        <td style="white-space: normal; max-width: 200px;">${p.nombre}</td>
+        <td>${badgeEstado(p.estado)}</td>
+        <td class="num">${Math.round(p.avancePlan*100)} %</td>
+        <td class="num avance-real">${Math.round(p.avanceReal*100)} %</td>
+        <td class="num">${fmtMoney(p.capexPlan)}</td>
+        <td class="num">${fmtMoney(p.capexReal)}</td>
+        <td class="num">${fmtMoney(p.opexPlan)}</td>
+        <td class="num">${fmtMoney(p.opexReal)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function fmtMoney(v){ return Number(v||0).toLocaleString('es-PE'); }
+
+function badgeEstado(estado){
+  const cls = estado==='Terminado' ? 'terminado' : (estado==='Ejecución' ? 'ejecucion' : 'noiniciado');
+  return `<span class="status-badge ${cls}">${estado}</span>`;
+}
+
+document.querySelectorAll('#tblProyectos thead th').forEach(th=>{
+  th.addEventListener('click', (e)=>{
+    e.stopPropagation(); // Evitar que el clic en cabecera dispare filtros
+    const key = th.dataset.key;
+    if(state.sort.table==='proyectos' && state.sort.key===key){
+      state.sort.dir = state.sort.dir==='asc' ? 'desc' : 'asc';
+    } else {
+      state.sort = { table:'proyectos', key, dir:'desc' };
+    }
+    render();
+  });
+});
+
+/* --------- Tabla Actividades --------- */
+function renderTablaActividades(activities){
+  const key = state.sort.table==='actividades' ? state.sort.key : 'nro';
+  const dir = state.sort.table==='actividades' ? state.sort.dir : 'desc';
+
+  const rows = activities.map(a=>({
+    nro: Number(a['Nro Actividad'])||0,
+    projectCod: (a['Nro Proyecto']||'').toString().trim(),
+    actividad: a['Actividades']||'',
+    fecha: excelDateToJS(a['Fecha Límite']),
+    responsable: a['Responsable']||'',
+    status: a['Status']||''
+  }));
+
+  rows.sort((a,b)=>{
+    let va=a[key], vb=b[key];
+    if(va instanceof Date) va = va.getTime()||0;
+    if(vb instanceof Date) vb = vb.getTime()||0;
+    if(typeof va === 'string') return dir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return dir==='asc' ? va-vb : vb-va;
+  });
+
+  const hasSelectedActivity = state.filters.activityNro && state.filters.activityNro.length > 0;
+
+  document.getElementById('tblActividadesBody').innerHTML = rows.map(r=>{
+    const isSelected = state.filters.activityNro.includes(r.nro);
+    let style = 'cursor: pointer;';
+    if (isSelected) {
+      style += ' background-color: rgba(225, 14, 126, 0.15); font-weight: bold;';
+    } else if (hasSelectedActivity) {
+      style += ' opacity: 0.45;';
+    }
+    return `
+      <tr style="${style}" onclick="toggleActivityFilter(${r.nro}, '${r.projectCod}')">
+        <td class="num">${r.nro}</td>
+        <td style="white-space: normal; max-width: 250px;">${r.actividad}</td>
+        <td>${r.fecha ? r.fecha.toLocaleDateString('es-PE') : ''}</td>
+        <td>${r.responsable}</td>
+        <td>${badgeStatusActividad(r.status)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function badgeStatusActividad(status){
+  const cls = /terminado/i.test(status) ? 'terminado' : (/ejecuci/i.test(status) || /proceso/i.test(status) ? 'ejecucion' : 'noiniciado');
+  return `<span class="status-badge ${cls}">${status}</span>`;
+}
+
+document.querySelectorAll('#tblActividades thead th').forEach(th=>{
+  th.addEventListener('click', (e)=>{
+    e.stopPropagation(); // Evitar que el clic en cabecera dispare filtros
+    const key = th.dataset.key;
+    if(state.sort.table==='actividades' && state.sort.key===key){
+      state.sort.dir = state.sort.dir==='asc' ? 'desc' : 'asc';
+    } else {
+      state.sort = { table:'actividades', key, dir:'desc' };
+    }
+    render();
+  });
+});
+
+/* --------- Gantt (Cronograma) --------- */
+function renderGantt(projects){
+  const year = state.filters.year[0] || state.years[state.years.length-1] || new Date().getFullYear();
+  const yearStart = new Date(year,0,1).getTime();
+  const yearEnd = new Date(year,11,31).getTime();
+  const span = yearEnd - yearStart;
+
+  const hasSelectedProject = state.filters.projectCod.length > 0;
+  const bars = projects.map(p=>{
+    const acts = state.actividades.filter(a => (a['Nro Proyecto']||'').toString().trim() === p.cod);
+    const fechas = acts.map(a=>excelDateToJS(a['Fecha Límite'])).filter(Boolean);
+    let start = p.fechaCreacion ? p.fechaCreacion.getTime() : yearStart;
+    let end = fechas.length ? Math.max(...fechas.map(d=>d.getTime())) : start + span*0.15;
+    if(end < start) end = start + span*0.05;
+    
+    // recortar al año visible
+    start = Math.max(start, yearStart);
+    end = Math.min(Math.max(end, start+1), yearEnd);
+
+    const isSelected = state.filters.projectCod.includes(p.cod);
+    let color = COLORS.verde;
+    if (hasSelectedProject && !isSelected) {
+      color = COLORS.verde + '40'; // ~25% opacity
+    }
+
+    return { label: p.nombreCorto || p.nombre, start: (start-yearStart), end: (end-yearStart), color: color };
+  }).filter(b=>b.end>b.start);
+
+  destroyChart('gantt');
+  const container = document.getElementById('ganttContainer');
+  container.style.height = Math.max(120, bars.length * 48) + 'px';
+  const ctx = document.getElementById('ganttChart');
+  ctx.removeAttribute('height');
+
+  charts.gantt = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: bars.map(b=>b.label),
+      datasets:[{
+        data: bars.map(b=>[b.start, b.end]),
+        backgroundColor: bars.map(b=>b.color),
+        borderRadius: 4,
+        barThickness: 16
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label: (ctx)=>{
+              const [s,e] = ctx.raw;
+              const sd = new Date(yearStart+s).toLocaleDateString('es-PE');
+              const ed = new Date(yearStart+e).toLocaleDateString('es-PE');
+              return sd + ' → ' + ed;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          min:0, max: span,
+          ticks:{
+            stepSize: span/4,
+            callback:(val)=>{
+              const q = Math.round(val / (span/4));
+              return ['1Q','2Q','3Q','4Q','5Q'][q] || '';
+            }
+          },
+          grid:{ color: COLORS.gris200 }
+        },
+        y:{ grid:{ display:false } }
+      }
+    }
+  });
+}
+
+/* =========================================================
+   INICIALIZACIÓN AL CARGAR LA PÁGINA
+========================================================= */
+window.addEventListener('DOMContentLoaded', () => {
+  // 1. Cargar Logo Dinámico
+  loadDynamicLogo();
+
+  // 2. Intentar cargar datos de caché
+  const cachedData = localStorage.getItem('dashboard_data');
+  if (cachedData) {
+    try {
+      const parsed = JSON.parse(cachedData);
+      state.presentacion = parsed.presentacion || [];
+      state.proyectos    = parsed.proyectos || [];
+      state.actividades  = parsed.actividades || [];
+      
+      buildCombined();
+      buildFilterOptions();
+      
+      document.getElementById('filtersRow').style.display = 'flex';
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('board').classList.remove('hidden');
+      document.getElementById('headerStatusText').textContent = 'Actualizar dashboard';
+      
+      render();
+    } catch (e) {
+      console.error('Error al parsear caché:', e);
+      localStorage.removeItem('dashboard_data');
+    }
+  } else {
+    // Si no hay datos, asegurar que se muestre el estado sin cargar
+    document.getElementById('headerStatusText').textContent = 'Cargue los archivos para comenzar';
+  }
+});
+</script>
+</body>
+</html>
+
