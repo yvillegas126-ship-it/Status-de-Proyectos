@@ -279,6 +279,88 @@
   
   .hidden{display:none !important;}
 
+  /* ---------- ANOTACIONES POR PROYECTO ---------- */
+  .proj-cell{display:flex;align-items:flex-start;gap:7px;}
+  .note-btn{
+    background:none;border:none;padding:0;margin-top:2px;
+    width:18px;height:18px;flex:none;cursor:pointer;line-height:0;
+    opacity:.4;transition:opacity .15s ease, transform .15s ease;
+  }
+  .note-btn:hover{opacity:1;transform:scale(1.18);}
+  .note-btn svg{
+    width:18px;height:18px;fill:none;
+    stroke:var(--gris-700);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+  }
+  .note-btn.has-nota{opacity:1;}
+  .note-btn.has-nota svg{stroke:var(--magenta);}
+  .note-btn.has-nota svg .bubble{fill:rgba(225,14,126,.15);}
+
+  #notesModal .modal-content{max-width:520px;}
+  #notaProyNombre{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    max-width:400px;
+  }
+  #notaTexto{
+    width:100%;min-height:190px;resize:vertical;
+    font-family:var(--font-primary);font-size:15px;line-height:1.45;
+    color:var(--gris-900);background:var(--blanco);
+    border:1px solid var(--gris-200);border-radius:8px;padding:10px 12px;
+    outline:none;
+  }
+  #notaTexto:focus{border-color:var(--verde);}
+  .notes-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .notes-hint{font-size:12px;color:var(--gris-700);line-height:1.3;}
+  .btn-note-save{
+    background:var(--verde);color:var(--blanco);border:none;
+    padding:8px 18px;border-radius:6px;cursor:pointer;flex-shrink:0;
+    font-family:var(--font-primary);font-size:14px;font-weight:700;
+  }
+  .btn-note-save:hover{background:#76901f;}
+
+  /* ---------- CONFIG DE GITHUB (dentro del modal) ---------- */
+  .gh-card{
+    border:1.5px solid var(--gris-200);
+    background:var(--blanco);
+    border-radius:8px;padding:14px 18px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .gh-card-title{
+    display:flex;align-items:center;gap:10px;
+    font-weight:700;font-size:14px;color:#1c2434;
+  }
+  .gh-card-title svg{width:20px;height:20px;flex-shrink:0;}
+  .gh-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;}
+  .gh-grid label{
+    display:flex;flex-direction:column;gap:3px;
+    font-size:11.5px;font-weight:600;color:var(--gris-700);text-transform:uppercase;letter-spacing:.4px;
+  }
+  .gh-grid label.wide{grid-column:1 / -1;}
+  .gh-grid input{
+    font-family:var(--font-primary);font-size:13.5px;
+    padding:6px 9px;border:1px solid var(--gris-200);border-radius:5px;
+    background:var(--blanco);color:var(--gris-900);outline:none;width:100%;
+    text-transform:none;letter-spacing:0;
+  }
+  .gh-grid input:focus{border-color:var(--verde);}
+  .gh-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .gh-status{font-size:12px;line-height:1.35;flex:1;min-width:140px;color:var(--gris-700);}
+  .gh-status.ok{color:#5f7519;font-weight:700;}
+  .gh-status.err{color:var(--magenta);font-weight:700;}
+  .gh-hint{font-size:11.5px;color:var(--gris-700);line-height:1.45;}
+  .gh-hint code{background:var(--gris-100);padding:1px 4px;border-radius:3px;font-size:11px;}
+
+  /* Aviso flotante de guardado */
+  #ghToast{
+    position:fixed;right:18px;bottom:18px;z-index:2000;
+    background:var(--gris-900);color:var(--blanco);
+    padding:10px 16px;border-radius:8px;font-size:13.5px;max-width:340px;
+    box-shadow:0 6px 20px rgba(0,0,0,.25);
+    opacity:0;transform:translateY(8px);pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  #ghToast.show{opacity:1;transform:translateY(0);}
+  #ghToast.err{background:var(--magenta);}
+
   /* ---------- CONFIG MODAL ---------- */
   .modal-overlay {
     position: fixed;
@@ -752,7 +834,53 @@
         </svg>
         <span style="color:#e10e7e; font-weight:700; font-size:14px;">Borrar Caché del Navegador</span>
       </div>
-      
+
+      <!-- Opción 3: Guardar las anotaciones en GitHub -->
+      <div class="gh-card">
+        <div class="gh-card-title">
+          <svg viewBox="0 0 24 24" fill="#1c2434" aria-hidden="true">
+            <path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.11-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12.01 12.01 0 0 0 24 12.5C24 5.87 18.63.5 12 .5z"/>
+          </svg>
+          <span>Servicio de anotaciones</span>
+        </div>
+        <div class="gh-grid">
+          <label class="wide">URL del servicio
+            <input id="ghApi" placeholder="https://anotaciones.tu-cuenta.workers.dev" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <div class="gh-actions">
+          <button class="btn-select-alt" onclick="probarServicio()">Probar conexión</button>
+          <button class="btn-select-alt" onclick="limpiarServicio()">Restaurar</button>
+          <span id="ghStatus" class="gh-status"></span>
+        </div>
+        <div class="gh-hint">
+          Las anotaciones se guardan en un JSON de GitHub a través de este servicio, que es
+          quien custodia el token. <b>Nadie se loguea ni configura nada para anotar.</b>
+          La URL definitiva se escribe una sola vez en <code>index.html</code>, en la constante
+          <code>ANOTACIONES_API</code>; este campo sirve para probar otra URL solo en este navegador.
+          El código del servicio y sus pasos de despliegue están en <code>anotaciones-worker.js</code>.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="ghToast"></div>
+
+<!-- Bloc de notas por proyecto -->
+<div id="notesModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="notaProyNombre">Anotaciones</h2>
+      <button class="modal-close" onclick="closeNota()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="notaTexto" placeholder="Escribe aquí tus anotaciones sobre este proyecto..."></textarea>
+      <div class="notes-footer">
+        <span class="notes-hint">La anotación se guarda al cerrar.<br>Deja el texto vacío para eliminarla.</span>
+        <button class="btn-note-save" onclick="closeNota()">Guardar y cerrar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -776,7 +904,8 @@ const state = {
     projectCod: [],
     activityNro: []
   },
-  sort: { table: 'proyectos', key: 'avanceReal', dir: 'desc' }
+  sort: { table: 'proyectos', key: 'avanceReal', dir: 'desc' },
+  anotaciones: {}      // { [cod de proyecto]: texto de la nota }
 };
 
 const COLORS = {
@@ -1122,6 +1251,13 @@ window.openSettings = function() {
       modalStatus.textContent = 'No se eligió ningún archivo';
     }
   }
+
+  // Campo del servicio de anotaciones
+  const apiInput = document.getElementById('ghApi');
+  if(apiInput) apiInput.value = apiUrl();
+  setGhStatus(ghConfigurado()
+    ? (apiOverride ? 'Usando una URL de prueba guardada en este navegador.' : 'Servicio configurado.')
+    : 'Sin servicio: las anotaciones se guardan solo en este navegador.');
 };
 
 window.closeSettings = function() {
@@ -1133,7 +1269,7 @@ window.triggerFileInput = function(e) {
 };
 
 window.clearDashboardCache = function() {
-  if(confirm('¿Estás seguro de que deseas borrar la caché y restablecer el dashboard al estado inicial?')) {
+  if(confirm('¿Estás seguro de que deseas borrar la caché y restablecer el dashboard al estado inicial?\n\nTus anotaciones NO se borran: se conservan y volverán a aparecer al cargar el archivo de nuevo.')) {
     localStorage.removeItem('dashboard_data');
     
     // Restaurar estado general
@@ -1167,6 +1303,256 @@ window.addEventListener('click', e => {
     closeSettings();
   }
 });
+
+/* =========================================================
+   ANOTACIONES POR PROYECTO (bloc de notas)
+   Se guardan en localStorage bajo su propia clave, separada de los datos
+   del Excel, para que sobrevivan a la carga de un archivo nuevo.
+   La clave de cada nota es el código de proyecto (cod).
+========================================================= */
+const NOTES_KEY = 'dashboard_anotaciones';
+let notaActiva = null; // cod del proyecto abierto en el bloc de notas
+
+function loadAnotaciones(){
+  try{
+    state.anotaciones = JSON.parse(localStorage.getItem(NOTES_KEY)) || {};
+  }catch(e){
+    console.error('No se pudieron leer las anotaciones guardadas:', e);
+    state.anotaciones = {};
+  }
+}
+
+function saveAnotaciones(){
+  try{
+    localStorage.setItem(NOTES_KEY, JSON.stringify(state.anotaciones));
+  }catch(e){
+    alert('No se pudo guardar la anotación: ' + e.message);
+  }
+}
+
+// Las tablas se arman con innerHTML, así que todo texto que venga del Excel
+// o del usuario debe escaparse antes de insertarlo.
+function escapeHtml(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Para un valor que va dentro de una cadena JS dentro de un atributo HTML
+// (onclick="fn('...')"): primero se escapa para JS y luego para HTML.
+function jsAttr(v){
+  return escapeHtml(String(v == null ? '' : v).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
+}
+
+function noteIcon(){
+  return '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path class="bubble" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+    '<path d="M7.5 8.5h9M7.5 12h5"/></svg>';
+}
+
+window.openNota = function(cod){
+  const proy = state.combined.find(p => p.cod === cod);
+  notaActiva = cod;
+  document.getElementById('notaProyNombre').textContent = proy ? proy.nombre : cod;
+  const ta = document.getElementById('notaTexto');
+  ta.value = state.anotaciones[cod] || '';
+  document.getElementById('notesModal').style.display = 'flex';
+  ta.focus();
+};
+
+window.closeNota = function(){
+  if(notaActiva !== null){
+    const cod = notaActiva;
+    const texto = document.getElementById('notaTexto').value.trim();
+
+    // 1. Siempre se guarda primero en local: la nota no se pierde pase lo que pase
+    if(texto) state.anotaciones[cod] = texto;
+    else delete state.anotaciones[cod];
+    saveAnotaciones();
+    notaActiva = null;
+    render(); // refresca el icono de la fila
+
+    // 2. Y se publica en el repositorio a través del servicio
+    if(ghPuedeEscribir()){
+      ghToast('Guardando…');
+      ghGuardarNota(cod, texto)
+        .then(() => { render(); ghToast('Anotación guardada para todos.'); })
+        .catch(err => {
+          console.error(err);
+          ghToast('Guardada solo en este navegador. ' + err.message, true);
+        });
+    }
+  }
+  document.getElementById('notesModal').style.display = 'none';
+};
+
+// Cerrar (guardando) al hacer clic fuera del bloc de notas o con Escape
+window.addEventListener('click', e => {
+  if(e.target === document.getElementById('notesModal')) closeNota();
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && document.getElementById('notesModal').style.display === 'flex'){
+    closeNota();
+  }
+});
+
+/* =========================================================
+   SINCRONIZACIÓN DE ANOTACIONES
+   Las anotaciones viven en un JSON de GitHub ({ cod: texto }), pero el
+   dashboard NUNCA habla con GitHub ni maneja tokens: se los pide a un
+   servicio propio (Cloudflare Worker) que guarda el token del lado del
+   servidor. Por eso nadie se loguea ni configura nada para anotar.
+   El código y el despliegue del servicio están en anotaciones-worker.js.
+   localStorage sigue siendo la copia local: si el servicio falla, el bloc
+   de notas nunca deja de guardar.
+========================================================= */
+
+// ⬇️ URL del Worker. Se escribe UNA sola vez aquí y se sube al repositorio;
+//    desde ese momento todos los que abran el dashboard pueden anotar.
+const ANOTACIONES_API = '';
+
+// Solo para probar otra URL desde este navegador sin tocar el archivo
+const API_OVERRIDE_KEY = 'dashboard_anotaciones_api';
+let apiOverride = '';
+
+function loadGhCfg(){
+  try{ apiOverride = localStorage.getItem(API_OVERRIDE_KEY) || ''; }
+  catch(e){ apiOverride = ''; }
+}
+function apiUrl(){
+  return (apiOverride || ANOTACIONES_API || '').trim().replace(/\/+$/,'');
+}
+function ghConfigurado(){ return !!apiUrl(); }
+// Sin tokens ni sesiones: si hay servicio, cualquiera puede escribir
+function ghPuedeEscribir(){ return ghConfigurado(); }
+
+async function apiError(res){
+  let detalle = '';
+  try{ const j = await res.json(); detalle = j.error || j.message || ''; }catch(e){}
+  if(res.status === 403) return detalle || 'El servicio no acepta peticiones desde esta página.';
+  if(res.status === 404) return 'No se encontró el servicio de anotaciones en esa URL.';
+  if(res.status === 413) return detalle || 'La anotación es demasiado larga.';
+  if(res.status >= 500) return detalle || 'El servicio de anotaciones no está disponible.';
+  return detalle || ('Error ' + res.status + '.');
+}
+
+// El servicio devuelve siempre el JSON completo de anotaciones
+async function ghLeerAnotaciones(){
+  const res = await fetch(apiUrl(), { cache:'no-store' });
+  if(!res.ok) throw new Error(await apiError(res));
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  return data || {};
+}
+
+// Se manda solo la nota que cambió; el servicio la aplica sobre el archivo
+// actual y responde con el resultado. Así no se pisan las anotaciones que
+// otra persona guardó mientras tanto, y borrar una nota sí se propaga.
+// texto vacío = eliminar la anotación.
+async function ghGuardarNota(cod, texto){
+  const res = await fetch(apiUrl(), {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ cod: cod, texto: texto })
+  });
+  if(!res.ok) throw new Error(await apiError(res));
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  state.anotaciones = data || {};
+  saveAnotaciones();
+}
+
+// Al abrir la página manda lo que está en el repositorio. Las notas que solo
+// existan en este navegador (escritas antes de tener el servicio, o mientras
+// estuvo caído) se conservan y se publican en la primera oportunidad.
+async function ghSincronizarAlIniciar(){
+  if(!ghConfigurado()) return;
+  try{
+    const remoto = await ghLeerAnotaciones();
+    const local = state.anotaciones || {};
+    const soloLocales = Object.keys(local).filter(k => !(k in remoto));
+
+    state.anotaciones = Object.assign({}, local, remoto); // el repositorio gana
+    saveAnotaciones();
+    if(state.combined.length) render();
+
+    let publicadas = 0;
+    for(const cod of soloLocales){
+      try{ await ghGuardarNota(cod, local[cod]); publicadas++; }
+      catch(e){ console.error('No se pudo publicar la anotación de ' + cod + ':', e); break; }
+    }
+    if(publicadas){
+      if(state.combined.length) render();
+      ghToast('Se publicaron ' + publicadas + ' anotación(es) que solo estaban en este navegador.');
+    }
+  }catch(e){
+    console.error('No se pudo sincronizar las anotaciones:', e);
+    ghToast('Sin conexión con el servicio de anotaciones (' + e.message + '). Se muestran las de este navegador.', true);
+  }
+}
+
+let ghToastTimer = null;
+function ghToast(msg, esError){
+  const el = document.getElementById('ghToast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.toggle('err', !!esError);
+  el.classList.add('show');
+  clearTimeout(ghToastTimer);
+  ghToastTimer = setTimeout(() => el.classList.remove('show'), esError ? 7000 : 3500);
+}
+
+function setGhStatus(msg, tipo){
+  const el = document.getElementById('ghStatus');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'gh-status' + (tipo ? ' ' + tipo : '');
+}
+
+window.probarServicio = async function(){
+  const url = document.getElementById('ghApi').value.trim().replace(/\/+$/,'');
+
+  if(url && !/^https:\/\/.+/i.test(url)){
+    setGhStatus('La URL debe empezar con https://', 'err');
+    return;
+  }
+
+  // Guardar la URL solo si es distinta de la que ya trae el archivo
+  apiOverride = (url && url !== ANOTACIONES_API) ? url : '';
+  try{
+    if(apiOverride) localStorage.setItem(API_OVERRIDE_KEY, apiOverride);
+    else localStorage.removeItem(API_OVERRIDE_KEY);
+  }catch(e){ /* navegador sin almacenamiento: la prueba igual sirve */ }
+
+  document.getElementById('ghApi').value = apiUrl();
+
+  if(!ghConfigurado()){
+    setGhStatus('Sin servicio configurado: las anotaciones se guardan solo en este navegador.', 'err');
+    return;
+  }
+
+  setGhStatus('Probando conexión…');
+  try{
+    const remoto = await ghLeerAnotaciones();
+    const n = Object.keys(remoto).length;
+    state.anotaciones = Object.assign({}, state.anotaciones, remoto);
+    saveAnotaciones();
+    if(state.combined.length) render();
+    setGhStatus('Conectado. ' + n + ' anotación(es) en el repositorio. Cualquiera que abra el dashboard puede anotar.', 'ok');
+  }catch(e){
+    setGhStatus(e.message, 'err');
+  }
+};
+
+window.limpiarServicio = function(){
+  apiOverride = '';
+  try{ localStorage.removeItem(API_OVERRIDE_KEY); }catch(e){}
+  const el = document.getElementById('ghApi');
+  if(el) el.value = apiUrl();
+  setGhStatus(ghConfigurado()
+    ? 'Se restauró la URL que trae el dashboard.'
+    : 'Sin servicio: las anotaciones se guardan solo en este navegador.', 'ok');
+};
 
 /* =========================================================
    FILTRADO AVANZADO (POWER BI CROSS-FILTERING)
@@ -1475,9 +1861,19 @@ function renderTablaProyectos(projects){
     } else if (hasSelectedProject) {
       activeRowStyle += ' opacity: 0.45;';
     }
+    const nota = state.anotaciones[p.cod] || '';
+    const notaTitle = nota
+      ? escapeHtml(nota.length > 200 ? nota.slice(0,200) + '…' : nota)
+      : 'Agregar anotación';
     return `
-      <tr style="${activeRowStyle}" onclick="toggleProjectFilter('${p.cod}')">
-        <td style="white-space: normal; max-width: 200px;">${p.nombre}</td>
+      <tr style="${activeRowStyle}" onclick="toggleProjectFilter('${jsAttr(p.cod)}')">
+        <td style="white-space: normal; max-width: 200px;">
+          <span class="proj-cell">
+            <button type="button" class="note-btn ${nota ? 'has-nota' : ''}" title="${notaTitle}"
+                    onclick="event.stopPropagation(); openNota('${jsAttr(p.cod)}')">${noteIcon()}</button>
+            <span>${escapeHtml(p.nombre)}</span>
+          </span>
+        </td>
         <td>${badgeEstado(p.estado)}</td>
         <td>${p.fechaInicio ? p.fechaInicio.toLocaleDateString('es-PE') : '-'}</td>
         <td>${p.fechaFin ? p.fechaFin.toLocaleDateString('es-PE') : '-'}</td>
@@ -1657,6 +2053,10 @@ function renderGantt(projects){
    INICIALIZACIÓN AL CARGAR LA PÁGINA
 ========================================================= */
 window.addEventListener('DOMContentLoaded', () => {
+  // 0. Anotaciones: copia local primero (instantánea), GitHub después
+  loadGhCfg();
+  loadAnotaciones();
+
   // 1. Intentar cargar datos de caché
   const cachedData = localStorage.getItem('dashboard_data');
   if (cachedData) {
@@ -1683,6 +2083,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // Si no hay datos, asegurar que se muestre el estado sin cargar
     document.getElementById('headerStatusText').textContent = 'Cargue los archivos para comenzar';
   }
+
+  // 2. Traer las anotaciones del repositorio (no bloquea el pintado del dashboard)
+  ghSincronizarAlIniciar();
 });
 </script>
 </body>
