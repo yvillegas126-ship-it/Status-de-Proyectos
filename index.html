@@ -50,6 +50,48 @@
     --gris-200: #e4e4e4;
     --gris-100: #f3f3f2;
     --card-radius: 14px;
+
+    /* =====================================================================
+       PARÁMETROS VISUALES AJUSTABLES (centralizados a propósito)
+       ===================================================================== */
+
+    /* ESCALA FLUIDA. Casi todas las medidas del tablero se expresan como
+       múltiplos de --u (calc(var(--u) * N)), donde N = el valor en px que
+       tenían dividido entre 10. Es lo que permite que al hacer zoom en el
+       navegador (que encoge el viewport lógico) el dashboard se reduzca en
+       proporción en vez de cortarse.
+       Aquí vale 10px fijos, que es el tamaño de referencia y el que usa la
+       vista apilada/móvil; dentro de la media query de escritorio se
+       redefine en función del viewport. */
+    --u: 10px;
+    /* (2) Espaciado entre el borde izquierdo de la tarjeta y su título.
+       Es la ÚNICA propiedad que controla ese margen: subir/bajar este valor. */
+    --titulo-padding-left: 8px;
+
+    /* Espaciado SUPERIOR de los títulos "Avance" / "Costos" / "Cronograma".
+       Subir el valor baja el título; bajarlo (admite negativos, ej. -4px) lo
+       sube. Se aplica como margin-top en la regla #cardAvance > h2, … */
+    --titulo-margin-top: 10px;
+
+    /* (6) Alto de la franja fija de trimestres del cronograma (pie fijo).
+       Es lo que separa las barras del borde inferior de la tarjeta. */
+    --gantt-axis-height: calc(var(--u) * 1.7);
+    /* Alto de la franja fija superior donde se muestra la fecha actual DD/MM */
+    --gantt-fecha-height: calc(var(--u) * 1.7);
+
+    /* (3)(4) Reparto vertical del tablero en vista escritorio.
+       Fila 2 = Avance | Listado de Proyectos   (quedan alineados abajo)
+       Fila 3 = Costos | Listado de Actividades
+       Fila 4 = Costos | Cronograma
+       Ahora mismo las dos tablas miden lo mismo (1.2 y 1.2). Subir
+       --fila-proyectos y bajar --fila-actividades en la MISMA cantidad
+       traslada alto de una tabla a la otra sin mover el resto del tablero
+       (la suma de las tres se mantiene en 3.4). Como la tarjeta de Avance
+       comparte la fila 2, al crecer la tabla de Proyectos crece también el
+       espacio del gráfico Pie. */
+    --fila-proyectos: 1.2fr;
+    --fila-actividades: 1.2fr;
+    --fila-cronograma: 1fr;
   }
   *{box-sizing:border-box;}
   body{
@@ -57,7 +99,7 @@
     font-family:var(--font-primary);
     background:var(--blanco);
     color:var(--gris-900);
-    font-size: 18px;
+    font-size: calc(var(--u) * 1.8);
   }
   h1,h2,h3, .title-font{
     font-family:var(--font-titles);
@@ -81,25 +123,26 @@
     border:1px solid var(--gris-200);
     border-bottom:4px solid var(--verde);
     border-radius:12px;
-    padding:8px 16px;
-    min-height:56px;
+    padding:calc(var(--u) * .8) calc(var(--u) * 1.6);
+    min-height:calc(var(--u) * 5.6);
     margin-bottom:12px;
     flex-shrink: 0;
   }
-  .brand{display:flex;align-items:center;gap:12px;}
+  .brand{display:flex;align-items:center;gap:calc(var(--u) * 1.2);}
   .brand-mark{
     display:flex;align-items:center;justify-content:center;
-    width:60px;height:40px;flex:none;overflow:hidden;
+    width:calc(var(--u) * 6);height:calc(var(--u) * 4);flex:none;overflow:hidden;
   }
-  .brand-mark img{max-height:34px;max-width:100%;object-fit:contain;}
+  .brand-mark img{max-height:calc(var(--u) * 3.4);max-width:100%;object-fit:contain;}
   .brand-text{display:flex;flex-direction:column;justify-content:center;line-height:1.15;}
-  .brand-text h1{margin:0;font-family:var(--font-titles);font-size:1.35rem;font-weight:700;color:#111111;line-height:1.15;}
-  .brand-text small{display:block;font-family:var(--font-primary);font-size:11px;font-weight:600;letter-spacing:1px;color:#6b6b6b;text-transform:uppercase;}
+  .brand-text h1{margin:0;font-family:var(--font-titles);font-size:calc(var(--u) * 2.16);font-weight:700;color:#111111;line-height:1.15;}
+  .brand-text small{display:block;font-family:var(--font-primary);font-size:calc(var(--u) * 1.1);font-weight:600;letter-spacing:1px;color:#6b6b6b;text-transform:uppercase;}
 
   /* Botón de ajustes del header, mismo estilo que .tool-btn en index.html */
   .header-tool-btn{
     background:#ffffff;border:1.5px solid var(--gris-200);border-radius:8px;
-    width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    width:calc(var(--u) * 3.4);height:calc(var(--u) * 3.4);
+    display:flex;align-items:center;justify-content:center;
     cursor:pointer;transition:all 0.2s ease;
   }
   .header-tool-btn:hover{border-color:var(--verde);}
@@ -121,9 +164,9 @@
     margin-bottom: 12px;
     border: 1px solid var(--gris-200);
   }
-  .filter-group{display:flex;align-items:center;gap:8px;}
+  .filter-group{display:flex;align-items:center;gap:calc(var(--u) * .8);}
   .filter-group .label{
-    font-family:var(--font-titles);font-size:13px;font-weight:600;color:var(--gris-900);
+    font-family:var(--font-titles);font-size:calc(var(--u) * 1.3);font-weight:600;color:var(--gris-900);
     text-transform: uppercase; letter-spacing: 0.5px;
   }
 
@@ -132,12 +175,12 @@
     background:var(--blanco);
     border:1px solid var(--gris-200);
     color:var(--gris-900);
-    padding:5px 28px 5px 10px;
+    padding:calc(var(--u) * .5) calc(var(--u) * 2.8) calc(var(--u) * .5) calc(var(--u) * 1);
     border-radius:6px;
     font-family:var(--font-primary);
-    font-size:14px;
+    font-size:calc(var(--u) * 1.4);
     outline:none;cursor:pointer;
-    min-width:110px;max-width:190px;
+    min-width:calc(var(--u) * 11);max-width:calc(var(--u) * 19);
     text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     transition:border-color .2s;
     position:relative;
@@ -204,27 +247,42 @@
     padding:14px 16px;
   }
   .card h2{
-    text-align:center;font-size:21px;margin:0 0 10px;font-weight:600;
+    text-align:center;font-size:calc(var(--u) * 2.1);margin:0 0 10px;font-weight:600;
     text-transform:none;
+  }
+  /* (2) Títulos de "Avance", "Costos" y "Cronograma" alineados a la izquierda,
+     sin quedar pegados al borde. El espaciado se regula SOLO con la variable
+     --titulo-padding-left definida en :root. */
+  #cardAvance > h2,
+  #cardCostos > h2,
+  #cardCronograma > h2{
+    text-align:left;
+    padding-left:var(--titulo-padding-left);
+    margin-top:var(--titulo-margin-top); /* espaciado superior del título */
   }
 
   /* Avance card */
   .avance-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
-  .kpi-num{text-align:center;flex:none;min-width:60px;}
-  .kpi-num .big{font-size:36px;font-weight:700;font-family:var(--font-titles);line-height:1;}
-  .kpi-num .lbl{font-size:15px;color:var(--gris-700);margin-top:2px;}
-  .gauge-wrap{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;}
-  .gauge-wrap canvas{max-height:85px;}
-  .gauge-center-label{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-family:var(--font-titles);font-size:21px;font-weight:600;line-height:1;}
-  .desv-wrap{text-align:center;min-width:70px;flex:none;}
-  .desv-wrap .val{font-family:var(--font-titles);font-size:21px;font-weight:700;}
-  .desv-wrap .lbl{font-size:14.5px;color:var(--gris-700);}
+  .kpi-num{text-align:center;flex:none;min-width:calc(var(--u) * 6);}
+  .kpi-num .big{font-size:calc(var(--u) * 3.6);font-weight:700;font-family:var(--font-titles);line-height:1;}
+  .kpi-num .lbl{font-size:calc(var(--u) * 1.5);color:var(--gris-700);margin-top:2px;}
+  /* min-width:0 permite que el contenedor flex se encoja; entonces el
+     ResizeObserver de Chart.js reajusta el canvas y no se sale de la tarjeta.
+     OJO: no poner max-width:100% en el canvas — el bitmap lo dimensiona
+     Chart.js, así que un tope de CSS no lo reajusta, lo COMPRIME (el medidor
+     salía estirado a zoom alto). */
+  .gauge-wrap{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;}
+  .gauge-wrap canvas{max-height:calc(var(--u) * 8.5);}
+  .gauge-center-label{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-family:var(--font-titles);font-size:calc(var(--u) * 2.1);font-weight:600;line-height:1;}
+  .desv-wrap{text-align:center;min-width:calc(var(--u) * 7);flex:none;}
+  .desv-wrap .val{font-family:var(--font-titles);font-size:calc(var(--u) * 2.1);font-weight:700;}
+  .desv-wrap .lbl{font-size:calc(var(--u) * 1.45);color:var(--gris-700);}
   
   .pie-row{display:flex;align-items:center;justify-content:space-around;gap:10px;margin-top:8px;position:relative;}
-  .pie-row canvas{max-width:150px;max-height:150px;}
-  .legend{display:flex;flex-direction:column;gap:8px;font-size:15px;flex:1;}
+  .pie-row canvas{max-width:calc(var(--u) * 15);max-height:calc(var(--u) * 15);}
+  .legend{display:flex;flex-direction:column;gap:calc(var(--u) * .8);font-size:calc(var(--u) * 1.5);flex:1;}
   .legend .item{display:flex;align-items:center;gap:7px;}
-  .legend .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .legend .dot{width:calc(var(--u) * 1);height:calc(var(--u) * 1);border-radius:50%;flex:none;}
   .select-mini{
     margin-top:6px;font-size:15.5px;padding:4px 20px 4px 8px;border-radius:5px;
     border:1px solid var(--gris-200);background:var(--blanco) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="9" height="5"><path d="M0 0l4.5 5 4.5-5z" fill="%23888"/></svg>') no-repeat right 8px center;
@@ -235,27 +293,42 @@
 
   .costos-row{display:flex;flex-direction:column;gap:16px;}
   .gauge-col{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;}
-  .gauge-col .pct{font-family:var(--font-titles);font-weight:700;font-size:21px;}
-  .gauge-col .name{font-family:var(--font-titles);font-weight:600;font-size:17px;margin-bottom:2px;}
-  .gauge-col canvas{max-height:90px;max-width:180px;}
-  .gauge-col .scale{display:flex;justify-content:space-between;font-size:14px;color:var(--gris-700);padding:0 2px;width:100%;max-width:180px;}
-  .gauge-col .midval{font-family:var(--font-titles);font-weight:700;font-size:20px;margin-top:-4px;}
+  .gauge-col .pct{font-family:var(--font-titles);font-weight:700;font-size:calc(var(--u) * 2.1);}
+  .gauge-col .name{font-family:var(--font-titles);font-weight:600;font-size:calc(var(--u) * 1.7);margin-bottom:2px;}
+  .gauge-col canvas{max-height:calc(var(--u) * 9);max-width:calc(var(--u) * 18);}
+  .gauge-col .scale{display:flex;justify-content:space-between;font-size:calc(var(--u) * 1.4);color:var(--gris-700);padding:0 2px;width:100%;max-width:calc(var(--u) * 18);}
+  .gauge-col .midval{font-family:var(--font-titles);font-weight:700;font-size:calc(var(--u) * 2);margin-top:-4px;}
 
   /* Tables */
   .table-scroll{max-height:260px;overflow-y:auto;overflow-x:auto;border-top:1px solid var(--gris-200);}
-  table{width:100%;border-collapse:collapse;font-size:16.5px;}
+  table{width:100%;border-collapse:collapse;font-size:calc(var(--u) * 1.65);}
   thead th{
     position:sticky;top:0;background:var(--blanco);text-align:left;
-    padding:8px 6px;font-weight:700;border-bottom:2px solid var(--gris-900);cursor:pointer;
+    padding:calc(var(--u) * .8) calc(var(--u) * .6);
+    font-weight:700;cursor:pointer;
     user-select:none;white-space:nowrap;z-index: 2;
+    /* La línea negra bajo la cabecera NO puede ser un border-bottom: con
+       border-collapse:collapse los bordes son de la tabla, no de la celda, así
+       que al hacer scroll la cabecera sticky se desplazaba sin su borde y la
+       línea desaparecía. Con una sombra interior la línea la pinta el propio
+       th y viaja con él. El borde transparente se queda solo para que la
+       cabecera siga midiendo lo mismo que antes. */
+    border-bottom:2px solid transparent;
+    box-shadow:inset 0 -2px 0 var(--gris-900);
   }
   thead th.num, td.num{text-align:center;}
-  thead th .arrow{font-size:13px;margin-left:2px;}
-  tbody td{padding:7px 6px;border-bottom:1px solid var(--gris-100);white-space:nowrap;}
+  thead th .arrow{font-size:calc(var(--u) * 1.3);margin-left:2px;}
+  tbody td{padding:calc(var(--u) * .7) calc(var(--u) * .6);border-bottom:1px solid var(--gris-100);white-space:nowrap;}
   tbody tr:nth-child(even){background:var(--gris-100);}
   td.avance-real{font-weight:700;}
+  /* (1) Avance real por debajo del avance plan → magenta.
+     Se usa SOLO en la columna "Avance Real" de la tabla "Listado de Proyectos".
+     El porcentaje grande del cuadro "Avance" queda fuera de esta regla a
+     propósito: allí la señal de desvío es el KPI "Desviación". */
+  .avance-bajo{color:var(--magenta);}
   .status-badge{
-    display:inline-block;padding:2px 8px;border-radius:4px;font-size:15px;font-weight:700;color:var(--blanco);
+    display:inline-block;padding:calc(var(--u) * .2) calc(var(--u) * .8);border-radius:4px;
+    font-size:calc(var(--u) * 1.5);font-weight:700;color:var(--blanco);
     text-transform: uppercase;
   }
   .status-Terminado{background:var(--verde);}
@@ -265,9 +338,58 @@
   .status-badge.noiniciado{background:var(--magenta);}
 
   /* Gantt */
-  .gantt-wrap{position:relative;overflow-y:auto;}
-  #ganttContainer{position:relative;width:100%;}
+  /* Columna flex: fecha (arriba) · gráfico (crece) · trimestres (abajo).
+     Gracias a esto la fila de 1Q…4Q queda SIEMPRE al fondo del contenedor,
+     haya 1 proyecto o 20, y el área del gráfico ocupa todo el espacio libre
+     repartiendo las barras en él en vez de amontonarlas arriba. */
+  .gantt-wrap{position:relative;overflow-y:auto;display:flex;flex-direction:column;}
+  /* flex:1 1 0 => el alto lo manda el contenedor; min-height (lo pone el JS
+     en renderGantt) es el alto mínimo por barra, que es lo que dispara el
+     scroll cuando hay muchos proyectos. */
+  #ganttContainer{position:relative;width:100%;flex:1 1 0;}
   #ganttChart{width:100%;display:block;}
+
+  /* (6) Eje de trimestres SIEMPRE visible: la franja va PEGADA ABAJO
+     (position:sticky; bottom:0), como un pie fijo, mientras las actividades
+     siguen desplazándose por encima.
+     Las etiquetas y separadores los posiciona el JS según el área real del
+     gráfico (ver pintarEjeTrimestres), para que coincidan con las líneas. */
+  .gantt-axis{
+    position:sticky;bottom:0;z-index:3;
+    height:var(--gantt-axis-height);
+    background:var(--blanco);
+    /* Sin border-top a propósito: junto con la línea del eje del gráfico
+       generaba una doble línea que parecía un segundo cierre del cronograma.
+       El único borde inferior es el de la tarjeta. */
+    font-family:var(--font-titles);font-size:calc(var(--u) * 1.3);color:var(--gris-700);
+    user-select:none;flex:none;
+  }
+  /* top:1px => las etiquetas quedan pegadas al final de las líneas verticales,
+     sin el hueco que dejaba la línea que se eliminó */
+  .gantt-axis .q{
+    position:absolute;top:1px;transform:translateX(-50%);
+    white-space:nowrap;line-height:1;
+  }
+  .gantt-axis .sep{position:absolute;top:0;bottom:4px;width:1px;background:var(--gris-200);}
+  /* (7) Marca magenta de la fecha actual dentro de la franja fija: es la
+     continuación visual de la línea vertical dibujada sobre el cronograma. */
+  .gantt-axis .hoy{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--magenta);}
+
+  /* Fecha actual (DD/MM) sobre la línea magenta. Va en su propia franja fija
+     arriba del cronograma, así se ve siempre aunque se haga scroll vertical, y
+     como vive dentro del área desplazable acompaña a la línea en horizontal.
+     El alto de la franja se regula con --gantt-fecha-height. */
+  .gantt-hoy{
+    position:sticky;top:0;z-index:3;
+    height:var(--gantt-fecha-height);
+    background:var(--blanco);
+    user-select:none;flex:none;
+  }
+  .gantt-hoy span{
+    position:absolute;top:1px;transform:translateX(-50%);
+    font-family:var(--font-titles);font-size:calc(var(--u) * 1.25);font-weight:700;
+    color:var(--magenta);white-space:nowrap;line-height:1;
+  }
 
   .empty-state{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -437,58 +559,98 @@
   }
 
   /* ---------- DESKTOP 16:9 VIEW STYLE ---------- */
-  @media(min-width:1024px) and (min-height:640px){
+  /* El umbral bajó de 1024x640 a 900x520: como ahora la tipografía y las
+     medidas escalan con --u, el tablero sigue cabiendo entero con bastante
+     más zoom antes de tener que caer a la vista apilada con scroll. */
+  @media(min-width:900px) and (min-height:520px){
+    /* ESCALA FLUIDA DEL TABLERO.
+       --u = 1% del lado limitante de un lienzo 16:9 (100vw/160 y 100vh/90 dan
+       ambos 10px a 1600x900). El tope de 10px hace que a 1600x900 o más se vea
+       EXACTAMENTE igual que antes; por debajo —o al hacer zoom, que es lo
+       mismo desde el punto de vista del CSS— todo encoge en proporción en vez
+       de desbordarse. El mínimo de 5.5px evita que el texto se vuelva ilegible
+       en zooms extremos. */
+    :root{
+      --u: clamp(5.5px, min(100vw / 160, 100vh / 90), 10px);
+    }
     body{
       height: 100vh;
       overflow: hidden;
     }
     .app{
       height: 100vh;
-      padding: 8px 14px;
+      padding: calc(var(--u) * .8) calc(var(--u) * 1.4);
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
     header.topbar{
-      padding: 6px 16px;
-      min-height: 56px;
-      margin-bottom: 8px;
+      padding: calc(var(--u) * .6) calc(var(--u) * 1.6);
+      min-height: calc(var(--u) * 5.6);
+      margin-bottom: calc(var(--u) * .8);
     }
     .filters-row{
-      padding: 4px 10px;
-      margin-bottom: 8px;
-      gap: 12px;
+      padding: calc(var(--u) * .4) calc(var(--u) * 1);
+      margin-bottom: calc(var(--u) * .8);
+      gap: calc(var(--u) * 1.2);
     }
+    /* (3)(4) TABLERO EN MALLA COMPARTIDA.
+       Antes cada columna repartía su alto por su cuenta, así que las tarjetas
+       de la izquierda y las de la derecha nunca coincidían. Ahora las dos
+       columnas usan LAS MISMAS filas de la malla, de modo que:
+         · "Listado de Proyectos" termina exactamente donde termina la tarjeta
+           de Avance (la del gráfico Pie) que tiene al lado  → requisito 4
+         · "Listado de Proyectos" y "Listado de Actividades" ocupan filas de
+           igual fracción, por lo que miden lo mismo          → requisito 3
+       Todo es relativo (fr), sin alturas fijas: se adapta a cualquier
+       resolución. Para regular las proporciones, tocar las variables
+       --fila-proyectos / --fila-actividades / --fila-cronograma en :root. */
     .board{
-      grid-template-columns: 310px 1fr;
-      gap: 8px;
+      /* La columna izquierda también escala: 31u = los 310px de referencia.
+         minmax(0,1fr) en la derecha es CLAVE: sin el 0, el mínimo automático de
+         la columna es el ancho de la tabla más ancha, así que las tablas
+         empujaban el tablero entero fuera de la ventana al reducir el viewport
+         (por eso al hacer zoom se cortaban la cabecera y los filtros). Con
+         minmax(0,…) la columna respeta el espacio disponible y el desborde lo
+         absorbe el scroll horizontal de .table-scroll, como estaba previsto. */
+      grid-template-columns: calc(var(--u) * 31) minmax(0, 1fr);
+      grid-template-rows:
+        auto                                /* fila 1:  (vacía)  | Filtros        */
+        minmax(0, var(--fila-proyectos))    /* fila 2:  Avance   | Proyectos      */
+        minmax(0, var(--fila-actividades))  /* fila 3:  Costos   | Actividades    */
+        minmax(0, var(--fila-cronograma));  /* fila 4:  Costos   | Cronograma     */
+      gap: calc(var(--u) * .8);
       flex: 1;
       min-height: 0;
+      align-items: stretch;
     }
-    .col-left{
-      height: 100%;
-      min-height: 0;
-      gap: 8px;
-      display: flex;
-      flex-direction: column;
-    }
-    .col-right{
-      height: 100%;
-      min-height: 0;
-      gap: 8px;
-    }
+    /* Las columnas dejan de ser cajas propias (display:contents) para que sus
+       tarjetas entren directamente en la malla. En móvil siguen siendo
+       columnas flex apiladas, porque esta regla vive solo en esta media query. */
+    .col-left, .col-right{ display: contents; }
+
+    #filtersRow     { grid-column:2; grid-row:1; margin-bottom:0; }
+    /* La tarjeta de Avance arranca en la fila de los filtros (fila 1) y llega
+       hasta el final de la fila 2: así aprovecha el hueco que quedaba vacío
+       arriba y su borde superior queda alineado con el de los filtros, sin
+       perder la alineación inferior con "Listado de Proyectos". */
+    #cardAvance     { grid-column:1; grid-row:1 / span 2; }
+    #cardCostos     { grid-column:1; grid-row:3 / span 2; }
+    #cardProyectos  { grid-column:2; grid-row:2; }
+    #cardActividades{ grid-column:2; grid-row:3; }
+    #cardCronograma { grid-column:2; grid-row:4; }
     .col-left > .card {
       flex: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 4px;
-      padding: 6px 10px;
+      gap: calc(var(--u) * .4);
+      padding: calc(var(--u) * .6) calc(var(--u) * 1);
     }
     .col-left > .card h2 {
       margin-bottom: 2px;
-      font-size: 18px;
+      font-size: calc(var(--u) * 1.8);
     }
     .col-left > .card .avance-row {
       flex: 1.1;
@@ -501,29 +663,34 @@
       position: relative;
       margin-top: 2px;
     }
+    /* El Pie aprovecha el alto extra que gana la tarjeta de Avance al crecer
+       la fila de Proyectos. El tope es cuadrado (el pastel es circular), y no
+       conviene pasar de ~165px porque a la derecha va la leyenda dentro de una
+       columna de 310px. Para regularlo, mover ambos max-* a la vez. */
     .col-left > .card .pie-row canvas {
       height: 100%;
       min-height: 0;
-      max-height: 140px;
-      max-width: 140px;
+      max-height: calc(var(--u) * 13);
+      max-width: calc(var(--u) * 13);
       width: auto;
     }
     .col-left > .card .legend {
-      font-size: 15px;
-      gap: 8px;
+      font-size: calc(var(--u) * 1.5);
+      gap: calc(var(--u) * .8);
     }
     .col-left > .card .legend .dot {
-      width: 10px;
-      height: 10px;
+      width: calc(var(--u) * 1);
+      height: calc(var(--u) * 1);
     }
     .col-left > .card .gauge-wrap canvas {
       height: 100%;
       min-height: 0;
-      max-height: 85px;
+      max-height: calc(var(--u) * 8.5);
       width: auto;
     }
     .col-left > .card .gauge-wrap {
       min-height: 0;
+      min-width: 0;
       flex: 1;
     }
     .col-left > .card .costos-row {
@@ -544,65 +711,54 @@
       gap: 2px;
       position: relative;
     }
+    /* Los medidores de Costos pueden crecer un poco: al alinear las tarjetas
+       (ver malla arriba) esta tarjeta quedó más alta. Los max-* siguen siendo
+       topes, así que en pantallas bajas el medidor se encoge solo. */
     .col-left > .card .gauge-col canvas {
       height: 100%;
       min-height: 0;
-      max-height: 95px;
-      max-width: 190px;
+      max-height: calc(var(--u) * 10);
+      max-width: calc(var(--u) * 18);
       width: auto;
     }
     .col-left > .card .gauge-col .name {
-      font-size: 16px;
+      font-size: calc(var(--u) * 1.6);
       margin: 0;
       line-height: 1;
     }
     .col-left > .card .gauge-col .pct {
-      font-size: 19px;
+      font-size: calc(var(--u) * 1.9);
       margin: 0;
       line-height: 1;
     }
     .col-left > .card .gauge-col .midval {
-      font-size: 18px;
+      font-size: calc(var(--u) * 1.8);
       margin: 0;
       line-height: 1;
     }
     .col-left > .card .gauge-col .scale {
-      font-size: 13px;
+      font-size: calc(var(--u) * 1.3);
       margin: 0;
       line-height: 1;
-      max-width: 190px;
+      max-width: calc(var(--u) * 21); /* debe coincidir con el max-width del canvas de arriba */
     }
-    
+
     .col-right > .card {
       min-height: 0;
+      min-width: 0;   /* que la tarjeta no se ensanche por su contenido */
       display: flex;
       flex-direction: column;
-      padding: 8px 10px;
+      padding: calc(var(--u) * .8) calc(var(--u) * 1);
     }
     .col-right > .card h2 {
       margin-bottom: 4px;
-      font-size: 19px;
+      font-size: calc(var(--u) * 1.9);
     }
     
-    /* Proportions for cards in left column */
-    #cardAvance {
-      flex: 1.7;
-    }
-    #cardCostos {
-      flex: 1.95;
-    }
+    /* NOTA: las antiguas proporciones por tarjeta (flex: 1.7 / 1.95 / 1.25 …)
+       fueron reemplazadas por las filas de la malla declaradas arriba, que son
+       las que ahora reparten el alto. Ver --fila-* en :root. */
 
-    /* Proportions for cards in right column */
-    #cardProyectos {
-      flex: 1.25;
-    }
-    #cardActividades {
-      flex: 0.95;
-    }
-    #cardCronograma {
-      flex: 1;
-    }
-    
     .table-scroll {
       flex: 1;
       min-height: 0;
@@ -754,6 +910,8 @@
             <thead>
               <tr>
                 <th data-key="nombre">Proyecto</th>
+                <!-- Columna "Líder": sale de la hoja "Presentación", columna F ("LIDER PROY") -->
+                <th data-key="lider">Líder</th>
                 <th data-key="estado">Estado</th>
                 <th data-key="fechaInicio">Fecha Inicio</th>
                 <th data-key="fechaFin">Fecha Fin</th>
@@ -790,9 +948,13 @@
       <div class="card" id="cardCronograma">
         <h2 style="text-align:left; margin-bottom:6px;">Cronograma</h2>
         <div class="gantt-wrap">
+          <!-- Franja fija ARRIBA: fecha actual (DD/MM) justo encima de la línea magenta -->
+          <div class="gantt-hoy" id="ganttHoyLabel" aria-hidden="true"></div>
           <div id="ganttContainer">
             <canvas id="ganttChart"></canvas>
           </div>
+          <!-- Franja fija ABAJO: 1Q | 2Q | 3Q | 4Q. Ambas las rellena pintarEjeTrimestres() -->
+          <div class="gantt-axis" id="ganttAxis" aria-hidden="true"></div>
         </div>
       </div>
 
@@ -1285,7 +1447,12 @@ window.clearDashboardCache = function() {
     
     // Destruir gráficos existentes
     Object.keys(charts).forEach(key => destroyChart(key));
-    
+    // (6) Vaciar también las franjas fijas del cronograma (trimestres y fecha)
+    const ejeGantt = document.getElementById('ganttAxis');
+    if (ejeGantt) ejeGantt.innerHTML = '';
+    const fechaGantt = document.getElementById('ganttHoyLabel');
+    if (fechaGantt) fechaGantt.innerHTML = '';
+
     // Resetear UI
     document.getElementById('filtersRow').style.display = 'none';
     document.getElementById('board').classList.add('hidden');
@@ -1726,8 +1893,13 @@ function render(){
   
   const tableActivities = getFilteredActivitiesExcluding(projects, 'activityNro');
   renderTablaActividades(tableActivities);
-  
-  renderGantt(tableProjects);
+
+  // (5) El cronograma recibe 'projects' (que SÍ respeta la selección de
+  //     proyecto) en lugar de 'tableProjects' (que la ignoraba): al seleccionar
+  //     uno o varios proyectos solo se dibujan esos, los demás desaparecen.
+  //     Sin selección, 'projects' equivale a todos los proyectos filtrados y el
+  //     cronograma se ve igual que antes.
+  renderGantt(projects);
 }
 
 function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
@@ -1741,7 +1913,14 @@ function renderAvance(projects){
   const pctReal = Math.round(avgReal*100);
   const desviacion = Math.round((avgReal-avgPlan)*1000)/10;
 
-  document.getElementById('gaugeAvanceLabel').textContent = pctReal + ' %';
+  // El porcentaje del cuadro "Avance" va SIEMPRE en su color normal: la regla
+  // de pintar en magenta el avance real por debajo del plan se aplica solo en
+  // la tabla "Listado de Proyectos" (ver renderTablaProyectos). Aquí ya está la
+  // "Desviación", que es la que indica si se va por debajo del plan.
+  const lblAvance = document.getElementById('gaugeAvanceLabel');
+  lblAvance.textContent = pctReal + ' %';
+  lblAvance.classList.remove('avance-bajo');
+
   const desvEl = document.getElementById('kpiDesviacion');
   desvEl.textContent = (desviacion>0?'+':'') + desviacion + ' %';
   desvEl.style.color = desviacion < 0 ? COLORS.magenta : COLORS.verde;
@@ -1861,24 +2040,29 @@ function renderTablaProyectos(projects){
     } else if (hasSelectedProject) {
       activeRowStyle += ' opacity: 0.45;';
     }
+    // (1) Avance real por debajo del plan → porcentaje en magenta
+    const pctPlan = Math.round(p.avancePlan*100);
+    const pctReal = Math.round(p.avanceReal*100);
+    const claseAvance = 'num avance-real' + (pctReal < pctPlan ? ' avance-bajo' : '');
     const nota = state.anotaciones[p.cod] || '';
     const notaTitle = nota
       ? escapeHtml(nota.length > 200 ? nota.slice(0,200) + '…' : nota)
       : 'Agregar anotación';
     return `
       <tr style="${activeRowStyle}" onclick="toggleProjectFilter('${jsAttr(p.cod)}')">
-        <td style="white-space: normal; max-width: 200px;">
+        <td style="white-space: normal; max-width: calc(var(--u) * 20);">
           <span class="proj-cell">
             <button type="button" class="note-btn ${nota ? 'has-nota' : ''}" title="${notaTitle}"
                     onclick="event.stopPropagation(); openNota('${jsAttr(p.cod)}')">${noteIcon()}</button>
             <span>${escapeHtml(p.nombre)}</span>
           </span>
         </td>
+        <td>${escapeHtml(p.lider)}</td>
         <td>${badgeEstado(p.estado)}</td>
         <td>${p.fechaInicio ? p.fechaInicio.toLocaleDateString('es-PE') : '-'}</td>
         <td>${p.fechaFin ? p.fechaFin.toLocaleDateString('es-PE') : '-'}</td>
-        <td class="num">${Math.round(p.avancePlan*100)} %</td>
-        <td class="num avance-real">${Math.round(p.avanceReal*100)} %</td>
+        <td class="num">${pctPlan} %</td>
+        <td class="${claseAvance}">${pctReal} %</td>
         <td class="num">${fmtMoney(p.capexPlan)}</td>
         <td class="num">${fmtMoney(p.capexReal)}</td>
         <td class="num">${fmtMoney(p.opexPlan)}</td>
@@ -1943,7 +2127,7 @@ function renderTablaActividades(activities){
     return `
       <tr style="${style}" onclick="toggleActivityFilter(${r.nro}, '${r.projectCod}')">
         <td class="num">${r.nro}</td>
-        <td style="white-space: normal; max-width: 250px;">${r.actividad}</td>
+        <td style="white-space: normal; max-width: calc(var(--u) * 25);">${r.actividad}</td>
         <td>${r.fecha ? r.fecha.toLocaleDateString('es-PE') : ''}</td>
         <td>${r.responsable}</td>
         <td>${badgeStatusActividad(r.status)}</td>
@@ -1971,13 +2155,109 @@ document.querySelectorAll('#tblActividades thead th').forEach(th=>{
 });
 
 /* --------- Gantt (Cronograma) --------- */
+
+// Lee la escala fluida --u (px) que define el CSS. El cronograma se dibuja en
+// un canvas, así que sus medidas no las puede escalar el CSS: hay que
+// calcularlas aquí para que el gráfico encoja igual que el resto al hacer zoom.
+function escalaU(){
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u'));
+  return (isFinite(v) && v > 0) ? v : 10;
+}
+
+// (7) Posición de la fecha actual dentro del año que se está mostrando, en ms
+// relativos al 1 de enero (misma unidad que las barras). Vale null cuando hoy
+// cae fuera del rango dibujado, y en ese caso simplemente no se pinta nada.
+let ganttHoyValor = null;
+// Texto DD/MM que se muestra encima de la línea magenta
+let ganttHoyTexto = '';
+
+// (7) Línea vertical magenta de la fecha actual. Se dibuja sobre el propio
+// canvas del cronograma, así que queda siempre bien colocada respecto de las
+// barras aunque haya scroll (vertical u horizontal) o cambie el tamaño.
+const ganttLineaHoyPlugin = {
+  id: 'lineaHoy',
+  afterDatasetsDraw(chart){
+    if(ganttHoyValor === null) return;
+    const escalaX = chart.scales.x;
+    if(!escalaX || ganttHoyValor < escalaX.min || ganttHoyValor > escalaX.max) return;
+    const px = escalaX.getPixelForValue(ganttHoyValor);
+    const area = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = COLORS.magenta;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px, area.top);
+    ctx.lineTo(px, area.bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+
+// (6) Mantiene la franja fija de trimestres alineada con el área real del
+// gráfico. afterLayout se dispara al crear el gráfico y en cada redimensión.
+const ganttEjePlugin = {
+  id: 'ejeTrimestres',
+  afterLayout(chart){ pintarEjeTrimestres(chart); }
+};
+
+// (6)(7) Dibuja 1Q | 2Q | 3Q | 4Q (y la marca de hoy) en la franja inferior
+// #ganttAxis, y la fecha DD/MM en la franja superior #ganttHoyLabel. Ambas usan
+// las coordenadas del área de trazado, así coinciden exactamente con las líneas
+// verticales del cronograma y con la línea magenta.
+function pintarEjeTrimestres(chart){
+  const eje = document.getElementById('ganttAxis');
+  const fecha = document.getElementById('ganttHoyLabel');
+  const area = chart && chart.chartArea;
+  const ancho = area ? (area.right - area.left) : 0;
+
+  if(!area || !(ancho > 0)){
+    if(eje) eje.innerHTML = '';
+    if(fecha) fecha.innerHTML = '';
+    return;
+  }
+  const izq = area.left;
+
+  // Posición en píxeles de la línea de hoy (null si hoy no entra en el rango)
+  let pxHoy = null;
+  const escalaX = chart.scales.x;
+  if(ganttHoyValor !== null && escalaX &&
+     ganttHoyValor >= escalaX.min && ganttHoyValor <= escalaX.max){
+    pxHoy = escalaX.getPixelForValue(ganttHoyValor);
+  }
+
+  if(eje){
+    let html = '';
+    for(let i=1;i<4;i++) html += `<span class="sep" style="left:${izq + ancho*i/4}px"></span>`;
+    for(let i=0;i<4;i++) html += `<span class="q" style="left:${izq + ancho*(i+0.5)/4}px">${i+1}Q</span>`;
+    if(pxHoy !== null) html += `<span class="hoy" style="left:${pxHoy}px"></span>`;
+    eje.innerHTML = html;
+  }
+
+  // La fecha solo aparece cuando la línea magenta está visible
+  if(fecha){
+    fecha.innerHTML = (pxHoy !== null)
+      ? `<span style="left:${pxHoy}px">${ganttHoyTexto}</span>`
+      : '';
+  }
+}
+
 function renderGantt(projects){
   const year = state.filters.year[0] || state.years[state.years.length-1] || new Date().getFullYear();
   const yearStart = new Date(year,0,1).getTime();
   const yearEnd = new Date(year,11,31).getTime();
   const span = yearEnd - yearStart;
 
-  const hasSelectedProject = state.filters.projectCod.length > 0;
+  // (7) Fecha actual del sistema: se recalcula en cada render, no hay nada fijo
+  const hoy = new Date();
+  const hoyRel = hoy.getTime() - yearStart;
+  ganttHoyValor = (hoyRel >= 0 && hoyRel <= span) ? hoyRel : null;
+  ganttHoyTexto = String(hoy.getDate()).padStart(2,'0') + '/' +
+                  String(hoy.getMonth()+1).padStart(2,'0');
+
+  // (5) 'projects' ya llega filtrado por la selección de proyectos, así que
+  //     aquí solo se dibuja lo que corresponde: se eliminó la atenuación de los
+  //     no seleccionados porque ahora directamente no aparecen.
   const bars = projects.map(p=>{
     // Cronograma: fechas de la hoja "Presentación" (columnas FECHA INICIO / FECHA FIN)
     let start = p.fechaInicio ? p.fechaInicio.getTime() : yearStart;
@@ -1988,36 +2268,40 @@ function renderGantt(projects){
     start = Math.max(start, yearStart);
     end = Math.min(Math.max(end, start+1), yearEnd);
 
-    const isSelected = state.filters.projectCod.includes(p.cod);
-    let color = COLORS.verde;
-    if (hasSelectedProject && !isSelected) {
-      color = COLORS.verde + '40'; // ~25% opacity
-    }
-
-    return { label: p.nombreCorto || p.nombre, start: (start-yearStart), end: (end-yearStart), color: color };
+    return { label: p.nombreCorto || p.nombre, start: (start-yearStart), end: (end-yearStart), color: COLORS.verde };
   }).filter(b=>b.end>b.start);
 
   destroyChart('gantt');
   const container = document.getElementById('ganttContainer');
-  container.style.height = Math.max(120, bars.length * 48) + 'px';
+  // Alto MÍNIMO (no fijo): con muchos proyectos manda este valor y aparece el
+  // scroll; con pocos, el flex estira el área y Chart.js reparte las barras en
+  // todo el alto disponible, dejando la fila de trimestres pegada abajo.
+  container.style.height = '';
+  const u = escalaU();                 // 10 = tamaño de referencia
+  const altoFila = u * 4.8;            // 48px a escala 1
+  container.style.minHeight = Math.max(u * 12, bars.length * altoFila) + 'px';
   const ctx = document.getElementById('ganttChart');
   ctx.removeAttribute('height');
 
   charts.gantt = new Chart(ctx, {
     type:'bar',
+    // (6)(7) Plugins locales del cronograma: franja fija de trimestres y línea de hoy
+    plugins:[ganttEjePlugin, ganttLineaHoyPlugin],
     data:{
       labels: bars.map(b=>b.label),
       datasets:[{
         data: bars.map(b=>[b.start, b.end]),
         backgroundColor: bars.map(b=>b.color),
         borderRadius: 4,
-        barThickness: 16
+        barThickness: u * 1.6           // 16px a escala 1
       }]
     },
     options:{
       indexAxis:'y',
       responsive:true,
       maintainAspectRatio:false,
+      // Las etiquetas del canvas también escalan (12px a escala 1)
+      font:{ size: u * 1.2 },
       plugins:{
         legend:{display:false},
         tooltip:{
@@ -2035,15 +2319,28 @@ function renderGantt(projects){
         x:{
           min:0, max: span,
           ticks:{
-            stepSize: span/4,
-            callback:(val)=>{
-              const q = Math.round(val / (span/4));
-              return ['1Q','2Q','3Q','4Q','5Q'][q] || '';
-            }
+            // (6) Las etiquetas de trimestre ya no se dibujan abajo (se irían al
+            // hacer scroll): ahora se muestran en la franja fija #ganttAxis.
+            // Se conserva el stepSize para que las líneas verticales sigan
+            // marcando los cortes de trimestre.
+            display:false,
+            stepSize: span/4
           },
-          grid:{ color: COLORS.gris200 }
+          // Sin línea de eje: era la segunda raya horizontal del fondo
+          border:{ display:false },
+          // tickLength:0 => la escala no reserva alto para marcas de tick, así
+          // las líneas verticales llegan hasta el borde del canvas y no queda
+          // el hueco que dejó la línea eliminada entre las barras y 1Q…4Q
+          grid:{ color: COLORS.gris200, tickLength: 0 }
         },
-        y:{ grid:{ display:false } }
+        y:{
+          grid:{ display:false },
+          // Chart.js reserva media etiqueta de alto arriba y abajo del área de
+          // trazado (unos 10px). Eso era el hueco que quedaba entre el final de
+          // las líneas verticales y la fila 1Q…4Q. Con las categorías centradas
+          // en su franja ese margen no hace falta.
+          afterFit(scale){ scale.paddingTop = 0; scale.paddingBottom = 0; }
+        }
       }
     }
   });
@@ -2086,6 +2383,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // 2. Traer las anotaciones del repositorio (no bloquea el pintado del dashboard)
   ghSincronizarAlIniciar();
+
+  // 3. Al cambiar el zoom o el tamaño de la ventana cambia --u, y las medidas
+  //    que se dibujan dentro del canvas (grosor de barra, alto de fila, fuente)
+  //    se fijan al crear el gráfico: hay que volver a pintarlo. Con retardo
+  //    para no redibujar en cada píxel mientras se arrastra el borde.
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if(!state.combined.length) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => render(), 200);
+  });
+
+  // 4. Repintado diferido: si la página se abre con el zoom ya alto, Chart.js
+  //    mide sus contenedores antes de que el navegador termine de repartir el
+  //    espacio y algún medidor puede quedar más ancho de la cuenta. Un segundo
+  //    render, una vez asentado el layout, los deja con la medida correcta.
+  setTimeout(() => { if(state.combined.length) render(); }, 300);
 });
 </script>
 </body>
