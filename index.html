@@ -148,6 +148,12 @@
   .header-tool-btn:hover{border-color:var(--verde);}
   .header-tool-btn:hover svg{stroke:var(--verde);}
   .header-tool-btn svg{transition:stroke 0.2s ease;}
+  /* Sin datos cargados el botón de actualizar no tiene nada que releer */
+  .header-tool-btn:disabled{opacity:.4;cursor:default;}
+  .header-tool-btn:disabled:hover{border-color:var(--gris-200);}
+  .header-tool-btn:disabled:hover svg{stroke:var(--gris-900);}
+  .header-tool-btn.girando svg{animation:girarIcono .8s linear infinite;transform-origin:50% 50%;}
+  @keyframes girarIcono{to{transform:rotate(360deg);}}
 
   /* ---------- FILE UPLOADER (Legacy or Initial Hidden) ---------- */
   .uploader{
@@ -797,6 +803,13 @@
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
       </button>
+      <button id="btnRefresh" class="header-tool-btn" onclick="refrescarUltimoArchivo()" title="Actualizar datos" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--gris-900)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px; height:18px;">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -973,7 +986,7 @@
     <div class="modal-body">
       
       <!-- Opción 1: Subir / actualizar archivo -->
-      <div class="config-card upload-card" onclick="triggerFileInput(event)">
+      <div class="config-card upload-card" onclick="elegirArchivoExcel()">
         <div style="display:flex; align-items:center; gap:12px;">
           <svg viewBox="0 0 24 24" fill="#87A227" style="width:24px; height:24px; flex-shrink:0;">
             <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/>
@@ -981,7 +994,7 @@
           <span style="color:#87A227; font-weight:700; font-size:14px; white-space:nowrap;">Cargar archivo Excel</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation()">
-          <button class="btn-select-alt" onclick="document.getElementById('fileInput').click()">Elegir archivo</button>
+          <button class="btn-select-alt" onclick="elegirArchivoExcel()">Elegir archivo</button>
           <span id="modalFileStatus" style="font-size:11.5px; color:#87A227; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No se eligió ningún archivo</span>
         </div>
       </div>
@@ -1083,7 +1096,13 @@ let charts = {}; // referencias a instancias Chart.js para poder destruirlas al 
 const fileInput = document.getElementById('fileInput');
 const fileStatus = document.getElementById('fileStatus');
 
-fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+fileInput.addEventListener('change', e => {
+  if(!e.target.files[0]) return;
+  // El input clásico no entrega un handle: el archivo recordado ya no
+  // corresponde a lo que se está viendo, así que se olvida.
+  fsBorrarHandle();
+  handleFile(e.target.files[0]);
+});
 
 // Arrastrar y soltar archivos en toda la pantalla cuando el dashboard está vacío
 window.addEventListener('dragenter', e => e.preventDefault());
@@ -1099,48 +1118,250 @@ window.addEventListener('dragleave', e => {
     document.getElementById('emptyState').style.background = '';
   }
 });
-window.addEventListener('drop', e => {
+window.addEventListener('drop', async e => {
   e.preventDefault();
-  if (state.combined.length === 0) {
-    document.getElementById('emptyState').style.background = '';
-    const f = e.dataTransfer.files[0];
-    if(f) handleFile(f);
+  if (state.combined.length !== 0) return;
+  document.getElementById('emptyState').style.background = '';
+
+  // El DataTransfer deja de ser accesible en cuanto el manejador cede el hilo,
+  // así que el archivo se toma antes de cualquier await.
+  const f = e.dataTransfer.files[0];
+
+  // Al soltar también se puede obtener el handle (Chromium): así el archivo
+  // arrastrado queda recordado para el botón de actualizar.
+  const item = e.dataTransfer.items && e.dataTransfer.items[0];
+  if(soportaHandles() && item && typeof item.getAsFileSystemHandle === 'function'){
+    try{
+      const handle = await item.getAsFileSystemHandle();
+      if(handle && handle.kind === 'file'){
+        handleArchivo = handle;
+        await fsGuardarHandle(handle);
+        handleFile(await handle.getFile());
+        return;
+      }
+    }catch(err){ console.warn('No se pudo recordar el archivo arrastrado:', err); }
   }
+
+  if(f){ fsBorrarHandle(); handleFile(f); }
 });
 
+// Devuelve una promesa que se resuelve cuando el archivo terminó de procesarse
+// (bien o mal). El botón de actualizar la usa para saber cuándo parar de girar;
+// el resto de las llamadas la pueden ignorar.
 function handleFile(file){
   fileStatus.textContent = 'Leyendo archivo...';
   fileStatus.classList.remove('error');
-  const reader = new FileReader();
-  reader.onload = evt => {
-    try{
-      const data = new Uint8Array(evt.target.result);
-      const wb = XLSX.read(data, {type:'array', cellDates:true});
-      parseWorkbook(wb, file.name);
-      
-      // Guardar datos en caché
-      localStorage.setItem('dashboard_data', JSON.stringify({
-        presentacion: state.presentacion,
-        proyectos: state.proyectos,
-        actividades: state.actividades,
-        fileName: file.name
-      }));
-      
-      closeSettings();
-    }catch(err){
-      console.error(err);
-      alert('Error al leer el archivo: ' + err.message);
-      fileStatus.textContent = 'Error: ' + err.message;
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try{
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, {type:'array', cellDates:true});
+        parseWorkbook(wb, file.name);
+
+        // Guardar datos en caché
+        localStorage.setItem('dashboard_data', JSON.stringify({
+          presentacion: state.presentacion,
+          proyectos: state.proyectos,
+          actividades: state.actividades,
+          fileName: file.name
+        }));
+
+        closeSettings();
+      }catch(err){
+        console.error(err);
+        alert('Error al leer el archivo: ' + err.message);
+        fileStatus.textContent = 'Error: ' + err.message;
+        fileStatus.classList.add('error');
+      }
+      actualizarBotonRefresco();
+      resolve();
+    };
+    reader.onerror = () => {
+      alert('No se pudo leer el archivo.');
+      fileStatus.textContent = 'No se pudo leer el archivo.';
       fileStatus.classList.add('error');
-    }
-  };
-  reader.onerror = () => {
-    alert('No se pudo leer el archivo.');
-    fileStatus.textContent = 'No se pudo leer el archivo.';
-    fileStatus.classList.add('error');
-  };
-  reader.readAsArrayBuffer(file);
+      resolve();
+    };
+    reader.readAsArrayBuffer(file);
+  });
 }
+
+/* =========================================================
+   RECORDAR EL ÚLTIMO ARCHIVO Y VOLVER A LEERLO
+   El navegador no puede abrir una ruta del disco por su cuenta, pero la File
+   System Access API sí deja guardar el "handle" que el usuario ya autorizó al
+   elegir el archivo. Ese handle se persiste en IndexedDB (localStorage solo
+   guarda texto, no sirve) y el botón de actualizar del header lo relee.
+   Requisitos: navegador Chromium (Edge/Chrome) y página servida por http(s) —
+   con file:// el origen es opaco y ni el selector ni IndexedDB están
+   disponibles. Donde no se pueda, todo cae al <input type="file"> de siempre.
+========================================================= */
+const FS_DB = 'dashboard_fs', FS_STORE = 'handles', FS_KEY = 'ultimoExcel';
+let handleArchivo = null;   // FileSystemFileHandle del último Excel cargado
+let fsBloqueado = false;    // IndexedDB falló en tiempo de ejecución
+
+function soportaHandles(){
+  // file:// queda fuera a propósito: el origen es opaco y tanto el selector
+  // como IndexedDB fallan; mejor no intentarlo y explicar por qué.
+  return location.protocol !== 'file:' &&
+         typeof window.showOpenFilePicker === 'function' &&
+         !!window.indexedDB && !fsBloqueado;
+}
+
+// Por qué el botón no puede refrescar solo. Se muestra en el modal para que el
+// usuario sepa si es cosa suya (elegir el archivo una vez) o del entorno.
+function motivoSinRecuerdo(){
+  if(location.protocol === 'file:'){
+    return 'La página está abierta como archivo local (file://). Para que el botón recuerde la ruta hay que abrirla por una dirección http(s).';
+  }
+  if(typeof window.showOpenFilePicker !== 'function'){
+    return 'Este navegador no permite recordar el archivo. Usa Microsoft Edge o Google Chrome.';
+  }
+  if(!window.indexedDB || fsBloqueado){
+    return 'El navegador tiene bloqueado el almacenamiento de este sitio, así que no se puede recordar el archivo.';
+  }
+  return 'Todavía no se ha elegido el archivo con el selector nuevo. Pulsa "Elegir archivo" una vez y el botón de actualizar ya no volverá a pedirlo.';
+}
+
+function fsAbrirDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(FS_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(FS_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+function fsOperar(modo, fn){
+  return fsAbrirDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(FS_STORE, modo);
+    const req = fn(tx.objectStore(FS_STORE));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  }));
+}
+
+// Ninguna de las tres debe romper la carga si IndexedDB falla: sin handle el
+// botón simplemente vuelve a pedir el archivo.
+async function fsGuardarHandle(handle){
+  if(!soportaHandles()) return false;
+  try{ await fsOperar('readwrite', st => st.put(handle, FS_KEY)); return true; }
+  catch(e){ console.warn('No se pudo recordar el archivo:', e); fsBloqueado = true; return false; }
+}
+async function fsLeerHandle(){
+  if(!soportaHandles()) return null;
+  try{ return await fsOperar('readonly', st => st.get(FS_KEY)) || null; }
+  catch(e){ console.warn('No se pudo recuperar el archivo recordado:', e); fsBloqueado = true; return null; }
+}
+async function fsBorrarHandle(){
+  handleArchivo = null;
+  if(!soportaHandles()) return;
+  try{ await fsOperar('readwrite', st => st.delete(FS_KEY)); }
+  catch(e){ /* si no se pudo borrar, el siguiente getFile() volverá a fallar y se reintenta */ }
+}
+
+function nombreArchivoActual(){
+  if(handleArchivo && handleArchivo.name) return handleArchivo.name;
+  try{
+    const cache = JSON.parse(localStorage.getItem('dashboard_data') || 'null');
+    if(cache && cache.fileName) return cache.fileName;
+  }catch(e){ /* caché ilegible: sin nombre que mostrar */ }
+  return '';
+}
+
+// Habilita/deshabilita el botón del header y ajusta su tooltip.
+function actualizarBotonRefresco(){
+  const btn = document.getElementById('btnRefresh');
+  if(!btn) return;
+  const nombre = nombreArchivoActual();
+  const hayDatos = state.combined.length > 0 || !!handleArchivo;
+  btn.disabled = !hayDatos;
+  if(!hayDatos){
+    btn.title = 'Actualizar datos (primero carga un archivo)';
+  }else if(handleArchivo){
+    btn.title = 'Actualizar datos de "' + nombre + '"';
+  }else{
+    btn.title = nombre
+      ? 'Volver a cargar "' + nombre + '" (se pedirá elegir el archivo)'
+      : 'Volver a cargar el archivo';
+  }
+}
+
+// Punto de entrada único para elegir el Excel. Con soporte usa el selector
+// moderno, que además devuelve el handle que se guarda para el refresco.
+window.elegirArchivoExcel = async function(){
+  if(!soportaHandles()){ fileInput.click(); return; }
+  let handle;
+  try{
+    [handle] = await window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Excel', accept: {
+        'application/vnd.ms-excel.sheet.macroEnabled.12': ['.xlsm'],
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+        'application/vnd.ms-excel': ['.xls']
+      }}]
+    });
+  }catch(err){
+    if(err && err.name === 'AbortError') return;   // el usuario cerró el diálogo
+    console.warn('Selector moderno no disponible, se usa el clásico:', err);
+    fileInput.click();
+    return;
+  }
+  handleArchivo = handle;
+  const recordado = await fsGuardarHandle(handle);
+  await handleFile(await handle.getFile());
+  actualizarBotonRefresco();
+  actualizarEstadoRecuerdo();
+  if(recordado) avisoHeader('Archivo recordado: el botón ⟳ ya actualiza con un clic');
+};
+
+// Mensaje pasajero en el texto del header (vuelve solo a su estado normal).
+let avisoTimer = null;
+function avisoHeader(texto){
+  const el = document.getElementById('headerStatusText');
+  if(!el) return;
+  const previo = el.textContent;
+  el.textContent = texto;
+  clearTimeout(avisoTimer);
+  avisoTimer = setTimeout(() => { el.textContent = previo; }, 5000);
+}
+
+// Botón de actualizar del header: relee el mismo archivo del disco.
+window.refrescarUltimoArchivo = async function(){
+  const btn = document.getElementById('btnRefresh');
+  if(btn && btn.disabled) return;
+  if(!handleArchivo){
+    // Sin archivo recordado no queda más que pedirlo; se avisa por qué, para
+    // que no parezca que el botón no hace lo que promete.
+    avisoHeader(soportaHandles()
+      ? 'Elige el archivo esta vez; a partir de la siguiente basta el botón ⟳'
+      : 'No se puede recordar la ruta aquí — mira el detalle en Configuración');
+    elegirArchivoExcel();
+    return;
+  }
+  try{
+    // El permiso de lectura puede haber caducado al reabrir el navegador; se
+    // pide aquí, todavía dentro del clic del usuario (requisito del navegador).
+    let permiso = await handleArchivo.queryPermission({ mode: 'read' });
+    if(permiso !== 'granted') permiso = await handleArchivo.requestPermission({ mode: 'read' });
+    if(permiso !== 'granted'){ elegirArchivoExcel(); return; }
+
+    if(btn) btn.classList.add('girando');
+    const file = await handleArchivo.getFile();   // falla si lo movieron o borraron
+    await handleFile(file);
+  }catch(err){
+    console.warn('No se pudo releer el archivo:', err);
+    const nombre = nombreArchivoActual();
+    alert('No se pudo leer' + (nombre ? ' "' + nombre + '"' : ' el archivo') +
+          '.\n\nPuede que lo hayan movido, renombrado o borrado. Elígelo de nuevo.');
+    await fsBorrarHandle();
+    actualizarBotonRefresco();
+    elegirArchivoExcel();
+  }finally{
+    if(btn) btn.classList.remove('girando');
+  }
+};
 
 function sheetToRows(wb, name){
   const ws = wb.Sheets[name];
@@ -1427,7 +1648,7 @@ window.closeSettings = function() {
 };
 
 window.triggerFileInput = function(e) {
-  fileInput.click();
+  elegirArchivoExcel();
 };
 
 window.clearDashboardCache = function() {
@@ -1458,7 +1679,10 @@ window.clearDashboardCache = function() {
     document.getElementById('board').classList.add('hidden');
     document.getElementById('emptyState').classList.remove('hidden');
     document.getElementById('headerStatusText').textContent = 'Cargue los archivos para comenzar';
-    
+
+    // Olvidar también el archivo recordado: el dashboard vuelve al estado inicial
+    fsBorrarHandle().then(actualizarBotonRefresco);
+
     closeSettings();
   }
 };
@@ -2380,6 +2604,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Si no hay datos, asegurar que se muestre el estado sin cargar
     document.getElementById('headerStatusText').textContent = 'Cargue los archivos para comenzar';
   }
+
+  // 1b. Recuperar el archivo recordado para el botón de actualizar. Se hace al
+  //     inicio y no dentro del clic: pedir el permiso de lectura exige un gesto
+  //     del usuario todavía vigente, y esperar a IndexedDB podría consumirlo.
+  actualizarBotonRefresco();
+  fsLeerHandle().then(h => { handleArchivo = h; actualizarBotonRefresco(); });
 
   // 2. Traer las anotaciones del repositorio (no bloquea el pintado del dashboard)
   ghSincronizarAlIniciar();
